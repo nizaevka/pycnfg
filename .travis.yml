@@ -1,0 +1,48 @@
+# used by make and deploy
+language: python
+python:
+    - "3.7"
+
+sudo: required
+services:
+    - docker
+before_install:
+    - docker build -t nizaevka/pycnfg -f Dockerfile.dev .
+
+# command to install dependencies (default pip install -r requirements.txt)
+# true = do nothing
+install: true
+
+# command to run tests
+script:
+    - docker run -e CI=true nizaevka/pycnfg pytest tests
+#    - make test
+
+deploy:
+    # pypi
+    provider: pypi
+    on:
+        branch: master
+        tags: true  # only on tagged commit git push --tags
+    user: "$PYPI_USERNAME"
+    password:
+      secure: "$PYPI_PASSWORD"
+    distributions: "sdist bdist_wheel"
+    skip_existing: true
+#     # test PyPi
+#     provider: script
+#     script: make deploy
+#     on:
+#        branch: feature
+
+after_deploy:
+    - docker build -t nizaevka/pycnfg -f Dockerfile .
+    # log in to the docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    # push to dockerhub
+    - docker push nizaevka/pycnfg
+
+# only on change to master
+branches:
+  only:
+    - master

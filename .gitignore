@@ -1,0 +1,63 @@
+# Ignore everything.
+*
+# Not ignore subdir.
+!*/
+
+Project*/
+.*/
+
+# Specific.
+!src/pycnfg/**
+
+src/pycnfg/.temp
+
+!docs/source/**
+!docs/make.bat
+!docs/Makefile
+docs/source/_pythonapi/
+
+!tests/**
+
+!docker/**
+
+!examples/**
+
+# except this file
+!.gitignore
+!README.md
+!LICENSE
+!Dockerfile
+!Dockerfile.dev
+!requirements.txt
+!requirements_dev.txt
+!Pipfile
+!Pipfile.lock
+!setup.py
+!setup.cfg
+!MANIFEST.in
+!project.toml
+!.travis.yml
+!Makefile
+!.readthedocs.yml
+!CODE_OF_CONDUCT.md
+!CONTRIBUTING.md
+
+# ignore pattern everywhere
+*$py.class
+*.hprof
+*.pyc
+*.pyo
+*.rbc
+*.yarb
+*~
+.DS_Store
+.git
+.hg
+.svn
+CVS/
+__pycache__/
+_svn/
+results/
+vssver.scc
+vssver2.scc
+deprecated.py
