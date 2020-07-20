@@ -3,3 +3,4 @@ sphinx==2.4.3
 sphinxcontrib-napoleon
 sphinx-autodoc-typehints
 sphinx_rtd_theme
+numpydoc

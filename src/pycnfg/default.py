@@ -9,7 +9,7 @@ __all__ = ['CNFG']
 
 logger = logging.getLogger('default')
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-logger.setLevel(1)
+logger.setLevel('INFO')
 
 
 CNFG = {

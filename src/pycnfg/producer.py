@@ -48,7 +48,7 @@ class Producer(object):
     def __init__(self, objects, oid):
         logger = logging.getLogger(oid)
         logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-        logger.setLevel(1)
+        logger.setLevel("INFO")
 
         self.objects = objects
         self.logger = logger
@@ -83,11 +83,12 @@ class Producer(object):
                           f"    {steps}")
         res = init
         for step in steps:
+            self.logger.debug(step)
             method = step[0]
             kwargs = step[1] if len(step) > 1 else {}
             if not isinstance(kwargs, dict):
-                raise ValueError(f'Value under {method} '
-                                 f'should be a dictionary.')
+                raise ValueError(f"Kwargs for step '{method}' "
+                                 f"should be a dictionary.")
             kwargs = self._resolve_object(kwargs, self.objects)
             res = getattr(self, method)(res, **kwargs)
         # Add identifier.

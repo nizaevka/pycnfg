@@ -225,7 +225,7 @@ class Handler(object):
         configs : list of tuple
             List of configurations, prepared for execution:
             [('section_id__config__id', config), ...]
-        objects : dict, None, optional (default=None)
+        objects : dict, optional (default=None)
             Dict of initial objects. If None, {}.
         debug : bool
             If True, print executed configuration.

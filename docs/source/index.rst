@@ -3,20 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to MLshell's documentation!
+Welcome to Pycnfg's documentation!
 ===================================
 
-**MLshell** is a framework for ML research and development:
-
-- Fast and simple pipeline prototyping and parameters tuning.
-- Unified ml pipeline.
-- Stable CV scheme.
-- Production ready.
-- One conf file rules all.
-- Simple result analyse.
-- Unified plots.
-- Common EDA techniques.
-- Pure python.
+**Pycnfg** is a tool for Python-based configurations:
+- убери None
+- `` на двойные замени
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

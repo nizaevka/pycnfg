@@ -8,7 +8,8 @@ pytest = "*"
 
 [packages]
 e1839a8 = {editable = true,path = "."}
-pycnfg = {editable = true,path = "."}
+pycnfg = {editable = true,extras = ["dev"],path = "."}
+numpydoc = "*"
 
 [requires]
 python_version = "3.7"

@@ -27,7 +27,7 @@ def find_path(script_name=False, filepath=None):
     ----------
     script_name : bool, optional (default=False)
         If True, return also script name.
-    filepath : str, None, optional (default=None)
+    filepath : str, optional (default=None)
         Path to main script. If None and Ipython, get from workdir. If None and
         standard interpreter, get from sys.argv. If sys.argv empty, get from
         working directory.
@@ -92,11 +92,11 @@ def run(conf, default_conf=None, objects=None, beep=False):
         {'section_id': {'configuration_id': configuration,},}.
         If str, absolute path to file with `CNFG` variable or relative to
         work dir.
-    default_conf : dict, str, None, optional (default=None)
+    default_conf : dict, str, optional (default=None)
         Default configurations to pass in `pycnfg.Handler.read()`.
         If str, absolute path to file with `CNFG` variable or relative to
         work dir.
-    objects : dict, None, optional (default=None)
+    objects : dict, optional (default=None)
         Dict of initial objects to pass in `pycnfg.Handler.exec()`:
         {'object_id': object}.
     beep : bool, optional (default=False)
