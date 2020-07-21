@@ -236,6 +236,7 @@ params = [
                         ('set', {'key': None, 'val': 42}),
                         ('print', {'key': None}),
                     ],
+                    'priority': 2,
                 }
             },
             'key': {

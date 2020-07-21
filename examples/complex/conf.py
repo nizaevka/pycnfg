@@ -1,5 +1,5 @@
 """
-Example of cross-linked configuration.
+Example of cross-linked configurations.
 There are two sections 'x' and 'y':
 
 * 'x' has multiple configurations 'x__1', 'x__2'.
@@ -61,6 +61,7 @@ CNFG = {
             'init': 'a',
             'producer': pycnfg.Producer,
             'steps': [],
+            'priority': 1,
         },
         '2': {
             'init': 'b',
@@ -69,6 +70,7 @@ CNFG = {
             'steps': [
                 ('replace', {'key': 'c'}),
             ],
+            'priority': 1,
         }
 
     },
@@ -83,11 +85,11 @@ CNFG = {
                 ('log', {'key': 'x__2'}),
                 ('log', {'key_id': 'x__2'}),
             ],
+            'priority': 2,
         }
     },
 }
 
-#  добавь пример на фичи, навроде глобал.
 
 if __name__ == '__main__':
     # Execute configuration(s).

@@ -82,12 +82,12 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(conf, dcnfg=None, objects=None, beep=False):
+def run(cnfg, dcnfg=None, objects=None, beep=False):
     """Wrapper over configuration handler.
 
     Parameters
     ----------
-    conf : dict or str
+    cnfg : dict or str
         Configuration to pass in ``pycnfg.Handler.read()``:
         {'section_id': {'configuration_id': configuration,}}.
         If str, absolute path to the file with ``CNFG`` variable or relative to
@@ -119,7 +119,7 @@ def run(conf, dcnfg=None, objects=None, beep=False):
         atexit.register(Beep, 400, 2000)  # Will be the first.
 
     handler = pycnfg.Handler()
-    configs = handler.read(conf, dcnfg=dcnfg)
+    configs = handler.read(cnfg, dcnfg=dcnfg)
     objects = handler.exec(configs, objects=objects, debug=True)
     return objects
 

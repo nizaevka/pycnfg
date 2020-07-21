@@ -1,4 +1,4 @@
-sphinx==2.4.1
+sphinx
 sphinxcontrib-napoleon
 sphinx-autodoc-typehints
 sphinx_rtd_theme

@@ -4,7 +4,7 @@ Python API
 .. currentmodule:: pycnfg
 
 Handler
-------
+-------
 
 .. autosummary::
     :toctree: _pythonapi/

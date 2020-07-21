@@ -6,14 +6,9 @@
 Welcome to Pycnfg's documentation!
 ===================================
 
-**Pycnfg** is a tool for Python-based configurations
-- examples
-- image
-- logo
-- README
-- поставь гугл хром и переведи страницу.
-- intersphinx :py:mod: , всякие там нампи массивы чтоб ссылки работали
-- разделитель в дефолтном логгере нужен, может сразу мо крутой подрубить
+**Pycnfg** is a tool for Python-based configurations.
+- Pure Python.
+- Flexible.
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

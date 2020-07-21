@@ -1,7 +1,7 @@
 Concepts
 ========
 
-.. image:: ./_static/images/workflow.png
+.. image:: ./_static/images/scheme.png
     :width: 1000
     :alt: error
 

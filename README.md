@@ -1,9 +1,8 @@
-ALPHA UNDERCONSTRUCTED
 <div align="center">
 
-[![Mlshell logo](https://github.com/nizaevka/pycnfg/blob/master/pictures/pycnfg_logo.PNG?raw=true)](https://github.com/nizaevka/pycnfg)
+[![Pycnfg logo](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/logo.PNG?raw=true)](https://github.com/nizaevka/pycnfg)
 
-**Pure Python configuration.**
+**Flexible Python configurations.**
 
 [![Build Status](https://travis-ci.org/nizaevka/pycnfg.svg?branch=master)](https://travis-ci.org/nizaevka/pycnfg)
 [![PyPi version](https://img.shields.io/pypi/v/pycnfg.svg)](https://pypi.org/project/pycnfg/)
@@ -13,16 +12,17 @@ ALPHA UNDERCONSTRUCTED
 
 </div>
 
-**PyCNFG** is a lib to execute Python-based configuration:
-- Flexibility.
-- Pure python.
+**PyCNFG** is a tool to execute Python-based configuration.
+- Pure Python.
+- Flexible.
 
-[![Workflow](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/images/workflow.JPG?raw=true)]
+It offers unified patten to create arbitrary Python objects pipeline-wise. 
+That naturally allows to control all parameters via single file.
+
+[![Workflow](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/images/scheme.png?raw=true)]
 
 For details, please refer to
  [Concepts](https://pycnfg.readthedocs.io/en/latest/Concepts.html>).
-
---
 
 ## Installation
 
@@ -33,11 +33,11 @@ pip install -U pycnfg
 ```
 
 <details>
-<summary>Specific versions with additional requirements</summary>
+<summary>Development installation (tests and docs): </summary>
 <p>
 
 ```bash
-pip install catalyst[dev]        # installs dependencies for development
+pip install pycnfg[dev]
 ```
 </p>
 </details>
@@ -48,36 +48,29 @@ pip install catalyst[dev]        # installs dependencies for development
 docker run -it nizaevka/pycnfg
 ```
 
-MLshell is compatible with: Python 3.6+.
+Pycnfg is testes on: Python 3.6+.
 
+## Docs
+[![Docs](https://readthedocs.org/projects/pycnfg/badge/?version=latest)](https://readthedocs.org/pycnfg/en/latest/?badge=latest)
 
 ## Getting started
 
 ```python
 import pycnfg
+
+objects = pycnfg.run({})
+print(objects)
 ```
-see Docs for details ;)
+see docs for details ;)
 
-## Docs and examples
-An overview and API documentation can be found here
-[![Docs](https://readthedocs.org/projects/pycnfg/badge/?version=latest)](https://readthedocs.org/pycnfg/en/latest/?badge=latest)
-
-Check **[examples folder](examples)** of the repository:
-- For regression example please follow [Allstate claims severity](examples/regression).
-- For classification example please follow [IEEE-CIS Fraud Detection](examples/classification).
+## Examples
+Check **[examples folder](examples)**.
 
 ## Contribution guide
-
-We appreciate all contributions.
-If you are planning to contribute back bug-fixes,
-please do so without any further discussion.
-If you plan to contribute new features, utility functions or extensions,
-please first open an issue and discuss the feature with us.
-
-- Please see the [contribution guide](CONTRIBUTING.md) for more information.
-- By participating in this project, you agree to abide by its [Code of Conduct](CODE_OF_CONDUCT.md).
+- [contribution guide](CONTRIBUTING.md).
+- [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 see the [LICENSE](LICENSE) file for details
+Apache License, Version 2.0 [LICENSE](LICENSE).
 [![License](https://img.shields.io/github/license/nizaevka/pycnfg.svg)](LICENSE)

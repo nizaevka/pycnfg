@@ -112,6 +112,7 @@ CNFG = {
                 ('log2', {'x_id': None}),
                 ('log2', {'x': None}),
             ],
+            'priority': 2,
         }
     },
 }

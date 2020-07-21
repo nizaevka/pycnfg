@@ -1,5 +1,5 @@
 """
-The :mod:`pycnfg.handler` contains class to read and execute configuration(s).
+The :mod:`pycnfg.Handler` contains class to read and execute configuration(s).
 
 The purpose of any configuration is to produced result (object) by combining
 resource (steps). Pycnfg offers unified patten to create arbitrary Python
@@ -41,6 +41,7 @@ The target for each sub-configuration is to create an instance.
 * takes ``init`` and consecutive pass it to ``steps`` with specified kwargs.
 
 * return resulting object.
+
  It can be used as kwargs for any step in others sections. To specify the order
  in which sections handled, the 'priority' key is available in each
  sub-configuration. ``section_id``/``configuration_id`` should not contains
@@ -56,6 +57,7 @@ For flexibility, it is possible to:
 
 Configuration keys
 ------------------
+
 init : callable or instance, optional (default={})
     Initial state for constructed object. Will be passed consecutive in steps
     as argument. If set as callable ``init``() auto called.
@@ -112,7 +114,7 @@ global : dict {'kwarg_name': value, ...}, optional (default={})
 
 Notes
 -----
-Default configurations can be set in ``pycnfg.Handler.read(conf,
+Default configurations can be set in ``pycnfg.Handler.read(cnfg,
 dcnfg=default)``.
 
 Examples
@@ -167,12 +169,12 @@ class Handler(object):
         # Save readed files as s under unique id.
         self._readed = {}
 
-    def read(self, conf, dcnfg=None):
+    def read(self, cnfg, dcnfg=None):
         """Read raw configuration and transform to executable.
 
         Parameters
         ----------
-        conf : dict or str
+        cnfg : dict or str
             Set of configurations:
             {'section_id': {'configuration_id': configuration,},}.
             If str, absolute path to file with ``CNFG`` variable.
@@ -208,17 +210,17 @@ class Handler(object):
             * If section exist:
              If more then one configurations in section => ValueError.
              If 'kwarg_id' contains postfix '_id', substitute None with
-             ``section_id__configuration_id``, otherwise with conf. object.
+             ``section_id__configuration_id``, otherwise with object.
 
         """
         if dcnfg is None:
             dcnfg = copy.deepcopy(pycnfg.CNFG)
 
-        if isinstance(conf, str):
-            conf = self._import_cnfg(conf)
+        if isinstance(cnfg, str):
+            cnfg = self._import_cnfg(cnfg)
         if isinstance(dcnfg, str):
             dcnfg = self._import_cnfg(dcnfg)
-        configs = self._parse_conf(conf, dcnfg)
+        configs = self._parse_cnfg(cnfg, dcnfg)
         return configs
 
     def _import_cnfg(self, conf):
@@ -280,7 +282,7 @@ class Handler(object):
             objects[oid] = self._exec(oid, val, objects)
         return objects
 
-    def _parse_conf(self, p, dp):
+    def _parse_cnfg(self, p, dp):
         # Apply default.
         p = self._merge_default(p, dp)
         # Resolve None inplace for configurations.

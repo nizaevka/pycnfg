@@ -1,7 +1,6 @@
 """
-Example of syntax flexibility.
-There are three CNFG provided equivalent results: set key 'b' with 42 and
-print.
+Example of configuration syntax.
+There are three CNFG provided equivalent result: set key 'b' with 42 and print.
 
 """
 
@@ -59,6 +58,7 @@ CNFG_3 = {
         'configuration_id': {
             'init': {'a': 7},
             'producer': CustomProducer,
+            'priority': 2,
             'steps': [
                 ('set', {'key': None, 'val': 42}),
                 ('print', {'key': None}),

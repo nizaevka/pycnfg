@@ -233,8 +233,8 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
-# Combine docstrings from class and constructor.
-# autoclass_content = 'both'
+# Combine docstrings from class and constructor (class/init/both).
+autoclass_content = 'class'
 
 # Generate autosummary pages.
 # Output should be set with: `:toctree: pythonapi/`

@@ -40,7 +40,7 @@ setuptools.setup(
     name=NAME,
     version=version['__version__'],
     author="nizaevka",
-    author_email="nizaevka@gmail.com",
+    author_email="knizaev@gmail.com",
     description="Flexible Python configurations.",
     keywords='configuration',
     long_description=parse_text('README.md', splitlines=False),
