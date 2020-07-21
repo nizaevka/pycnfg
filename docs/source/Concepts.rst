@@ -5,32 +5,24 @@ Concepts
     :width: 1000
     :alt: error
 
-.. contents:: **Contents**
+.. remain only module hat
+.. automodule:: pycnfg.handler
+    :exclude-members: Handler
+
+
+.. .. contents:: **Contents**
     :depth: 1
     :local:
     :backlinks: none
 
-Pipeline structure
-^^^^^^^^^^^^^^^^^^
+.. .. literalinclude:: /../../src/pycnfg/handler.py
+   :language: python
+   :start-after: The purpose of any configuration
+   :end-before: """
 
-The purpose of any configuration is to produced result (object) by combining
-resource (steps). Pycnfg offers unified configuration patten to create
-arbitrary Python object pipeline-wise. That naturally allows
-to control all parameters via single configuration dictionary.
-
-# Multiple levels of assembling.
-# arrangement of each of its functional units
-
-
-
-
-.. code-block:: none
-
+.. .. code-block:: none
+    bla-bla
+.. .. note::
     bla-bla
 
-
-See `CreateDefaultPipeline <_modules/mlshell/default.html#CreateDefaultPipeline>`_ source for details.
-
-
-.. note::
-    bla-bla
+.. See `CreateDefaultPipeline <_modules/mlshell/default.html#CreateDefaultPipeline>`_ source for details.

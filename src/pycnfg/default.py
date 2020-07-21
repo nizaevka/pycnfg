@@ -35,7 +35,11 @@ CNFG = {
     },
 
 }
-"""Default configuration."""
+"""Default configuration.
+
+Specifies logger and project_path objects.
+
+"""
 
 
 if __name__ == '__main__':

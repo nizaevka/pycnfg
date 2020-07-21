@@ -34,7 +34,7 @@ command to create container with pre-installed package and run shell:
 
 .. parsed-literal::
 
-    docker run -it |author|\/|project|
+    docker run -it |author|/|project|
 
 .. not easy to substitute author/project here.
     https://stackoverflow.com/questions/20513972/restructured-text-sphinx-substitution-in-a-file-name

@@ -6,9 +6,14 @@
 Welcome to Pycnfg's documentation!
 ===================================
 
-**Pycnfg** is a tool for Python-based configurations:
-- убери None
-- `` на двойные замени
+**Pycnfg** is a tool for Python-based configurations
+- examples
+- image
+- logo
+- README
+- поставь гугл хром и переведи страницу.
+- intersphinx :py:mod: , всякие там нампи массивы чтоб ссылки работали
+- разделитель в дефолтном логгере нужен, может сразу мо крутой подрубить
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

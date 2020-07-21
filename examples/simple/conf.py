@@ -23,6 +23,7 @@ class Producer(pycnfg.Producer):
         # Some logic..
         return obj
 
+
 # Configuration.
 #   Set `init` object state.
 #   Set `producer` class.
@@ -42,12 +43,12 @@ CNFG = {
     }
 }
 
+if __name__ == '__main__':
+    # Execute configuration(s).
+    objects = pycnfg.run(CNFG, default_conf={})
+    # => 7
+    # => 42
 
-# Execute configuration(s).
-objects = pycnfg.run(CNFG, default_conf={})
-# => 7
-# => 42
-
-# Storage for produced object(s).
-print(objects['section_id__configuration_id'])
-# => {'a': 7, 'b': 42}
+    # Storage for produced object(s).
+    print(objects['section_id__configuration_id'])
+    # => {'a': 7, 'b': 42}

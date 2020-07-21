@@ -153,7 +153,7 @@ params = [
                      'steps': [],
                 },
                 'config3': {
-                    # Needs for list of id/val
+                    # Needs for list of id/val.
                     'init': 'cross-section2',
                 },
             },
@@ -202,4 +202,12 @@ params = [
             }
          },
     ),
+    # [v] Resolver global/section (by val/by id).
+    # [v] CustomProducer.
+    (
+        [f'{currdir}/complex_conf.py'],
+        {},
+        {**out, 'x__2': 'c', 'y__conf': {'b': 2, 'c': 42, 'print': 252}}
+    ),
+
 ]

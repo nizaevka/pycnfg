@@ -36,7 +36,7 @@ def find_path(script_name=False, filepath=None):
     -------
     project_dir : str
         Full path to start script directory.
-    script_name : str, optional if `script_name` is True
+    script_name : str, optional if ``script_name`` is True
         Main script name. 'ipython' for Ipython.
 
     """
@@ -88,16 +88,16 @@ def run(conf, default_conf=None, objects=None, beep=False):
     Parameters
     ----------
     conf : dict or str
-        Configuration to pass in `pycnfg.Handler.read()`.
-        {'section_id': {'configuration_id': configuration,},}.
-        If str, absolute path to file with `CNFG` variable or relative to
+        Configuration to pass in ``pycnfg.Handler.read()``:
+        {'section_id': {'configuration_id': configuration,}}.
+        If str, absolute path to the file with ``CNFG`` variable or relative to
         work dir.
     default_conf : dict, str, optional (default=None)
-        Default configurations to pass in `pycnfg.Handler.read()`.
-        If str, absolute path to file with `CNFG` variable or relative to
+        Default configurations to pass in ``pycnfg.Handler.read()``.
+        If str, absolute path to file with ``CNFG`` variable or relative to
         work dir.
     objects : dict, optional (default=None)
-        Dict of initial objects to pass in `pycnfg.Handler.exec()`:
+        Dict of initial objects to pass in ``pycnfg.Handler.exec()``:
         {'object_id': object}.
     beep : bool, optional (default=False)
         If True, play sound notification on ending.
@@ -110,8 +110,7 @@ def run(conf, default_conf=None, objects=None, beep=False):
 
     See Also
     --------
-    :class:`pycnfg.Handler`:
-        Reads configurations, executes steps.
+    :class:`pycnfg.Handler`: Reads configurations, executes steps.
 
     """
     warnings.simplefilter(action='ignore', category=FutureWarning)

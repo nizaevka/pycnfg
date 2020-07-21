@@ -59,14 +59,14 @@ class Producer(object):
         """Execute configuration steps.
 
         consecutive:
-        init = getattr(self, 'method_id')(init, objects=objects, **kwargs)`
+        init = getattr(self, 'method_id')(init, objects=objects, **kwargs)``
 
         Parameters
         ----------
         init: object
             Will be passed as arg in each step and get back as result.
         steps : list of tuples ('method_id', {**kwargs})
-            List of `self` methods to run consecutive with kwargs.
+            List of ``self`` methods to run consecutive with kwargs.
 
         Returns
         -------
@@ -75,7 +75,8 @@ class Producer(object):
 
         Notes
         -----
-        Object identifier `oid` added, if produced object has `oid` attribute.
+        Object identifier ``oid`` auto added, if produced object has ``oid``
+        attribute.
 
         """
         self.logger.info(f"|__ CONFIGURATION: {self.oid}")
@@ -112,7 +113,7 @@ class Producer(object):
             with './'. Created, if not exists. If None,"self.project_path/.temp
             /objects" is used.
         pkg : str, optional default('pickle')
-            Import package and try `pkg`.dump(obj, file, **kwargs).
+            Import package and try ``pkg``.dump(obj, file, **kwargs).
         **kwargs : kwargs
             Additional parameters to pass in .dump().
 
@@ -158,7 +159,7 @@ class Producer(object):
         prefix : str, optional (default=None)
             File identifier. If None, 'self.oid' is used.
         pkg : str, optional default('pickle')
-            Import package and try obj = `pkg`.load(file, **kwargs).
+            Import package and try obj = ``pkg``.load(file, **kwargs).
         cachedir : str, optional(default=None)
             Absolute path load dir or relative to 'self.project_dir' started
             with './'. If None, 'self.project_path/.temp/objects' is used.
@@ -189,9 +190,8 @@ class Producer(object):
     def _resolve_object(self, kwargs, objects):
         """Substitute objects in kwargs.
 
-
-        If val not ends with '_id'. For val that str (or str in list) looks up \
-        in `objects` key__val, replace if found.
+        If val not ends with '_id'. For str val (or str subval in list val)
+        looks up in ``objects`` the key__val, replace if found.
         """
         for key, val in kwargs.items():
             if not key.endswith('_id'):

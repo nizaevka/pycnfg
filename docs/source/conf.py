@@ -272,6 +272,7 @@ todo_include_todos = False
 rst_epilog = f"""
 .. |version| replace:: {version}
 .. |project| replace:: {project}
+.. |author| replace:: {author}
 """
 # If also need reference:
 # .. _version: http://google.com

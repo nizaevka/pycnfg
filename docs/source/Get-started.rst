@@ -15,15 +15,14 @@ Pycnfg offers pattern to pipeline-wise code execution, that naturally allows
 to control all parameters via single configuration dictionary.
 
 
-.. literalinclude:: /../../examples/simplest/conf.py
+.. literalinclude:: /../../examples/simple/conf.py
    :language: python
    :lineno-match:
 
 :github:`github repo </examples/simplest>`
 
 There are could be arbitrary number of sections/configurations.
-Cross-configurations interaction goes through `objects` storage.
-
+Cross-configurations interaction goes through special storage `objects`.
 
 Next
 ~~~~

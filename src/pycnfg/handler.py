@@ -1,85 +1,99 @@
-"""The module contains class to read and execute configuration(s).
+"""
+The :mod:`pycnfg.handler` contains class to read and execute configuration(s).
+
+The purpose of any configuration is to produced result (object) by combining
+resource (steps). Pycnfg offers unified patten to create arbitrary Python
+objects pipeline-wise. That naturally allows to control all parameters via
+single configuration.
 
 Configuration is a python dictionary. It supports multiple sections. Each
 section specify set of sub-configurations. Each sub-configuration provide steps
 to construct an object, that can be utilize as argument in some other sections.
-Whole configuration could be passed to `pycnfg.run` or user-defined wrapper
-around `pycnfg.Handler` to built underlying sub-configuration`s objects one by
-one.
+Whole configuration could be passed to ``pycnfg.run`` or user-defined wrapper
+around ``pycnfg.Handler`` to built underlying sub-configuration``s objects one
+by one.
 
 For each section there is common logic:
-{'section_id':
-    'configuration_id 1': {
-        'init': initial object of custom type.
-        'producer': factory class, which contain methods to run steps.
-        'patch': add custom method to class.
-        'steps': [
-            ('method_id 1', {'kwarg_id':value, ..}),
-            ('method_id 2', {'kwarg_id':value, ..}),
-        ],
-        'global': shortcut to common parameters.
-        'priority': execute priority (integer non-negative number).
+
+.. code-block::
+
+    {'section_id':
+        'configuration_id 1': {
+            'init': initial object of custom type.
+            'producer': factory class, which contain methods to run steps.
+            'patch': add custom method to class.
+            'steps': [
+                ('method_id 1', {'kwarg_id':value, ..}),
+                ('method_id 2', {'kwarg_id':value, ..}),
+            ],
+            'global': shortcut to common parameters.
+            'priority': execute priority (integer non-negative number).
+        }
+        'configuration_id 2':{
+            ...
+        }
     }
-    'configuration_id 2':{
-        ...
-    }
-}
 
 The target for each sub-configuration is to create an instance.
-`init` is the template for future object (empty dict() for example).
-`producer` work as factory, it should contain .produce() method that:
-* takes `init` and consecutive pass it to `steps` with specified kwargs.
-* return resulting object, that can be used as kwargs for any step in others
-sections. To specify the order in which sections handled, the 'priority'
-key is available in each sub-configuration. `section_id`/`configuration_id`
-should not contains double underscore '__'.
+``init`` is the template for future object (empty dict() for example).
+``producer`` work as factory, it should contain .produce() method that:
+
+* takes ``init`` and consecutive pass it to ``steps`` with specified kwargs.
+
+* return resulting object.
+ It can be used as kwargs for any step in others sections. To specify the order
+ in which sections handled, the 'priority' key is available in each
+ sub-configuration. ``section_id``/``configuration_id`` should not contains
+ double underscore '__'.
 
 For flexibility, it is possible to:
+
 * Specify default configuration for section(s).
-* Specify global value for common kwargs in steps via `global` key.
+* Specify global value for common kwargs in steps via ``global`` key.
 * Create separate section for arbitrary parameter in steps.
-* Monkey patch `producer` object with custom functions via `patch` key.
-* `init` can be both an instance, a class or a function
+* Monkey patch ``producer`` object with custom functions via ``patch`` key.
+* ``init`` can be both an instance, a class or a function
 
 Configuration keys
 ------------------
 init : callable or instance, optional (default={})
     Initial state for constructed object. Will be passed consecutive in steps
-    as argument. If set as callable `init`() auto called.
+    as argument. If set as callable ``init``() auto called.
 
 producer : class, optional (default=pycnfg.Producer)
-    Factory to construct an object: `producer.produce(`init`,`steps`)`. Class
-    auto initialized: `producer(`objects`, 'section_id__configuration_id',
-    **kwargs)`, where `objects` is a dictionary with previously created
-    objects {'section_id__configuration_id': object}. If ('__init__', kwargs)
-    step provided in `steps`, kwargs will be passed to initializer.
+    Factory to construct an object: ``producer.produce(init,steps)``.
+    Class auto initialized: ``producer(objects, 'section_id__configuration_id',
+    **kwargs)``, where ``objects`` is a dictionary with previously created
+    objects {``section_id__configuration_id``: object}. If ('__init__', kwargs)
+    step provided in ``steps``, kwargs will be passed to initializer.
 
 patch : dict {'method_id' : function}, optional (default={})
-    Monkey-patching `producer` object with custom functions.
+    Monkey-patching ``producer`` object with custom functions.
 
 steps : list of tuples ('method_id', {**kwargs}), optional (default=[])
     List of class methods to run consecutive with kwargs.
-    Each step should be a tuple: `('method_id', {kwargs to use})`,
-    where 'method_id' should match to `producer` functions' names.
+    Each step should be a tuple: ``('method_id', {kwargs to use})``,
+    where 'method_id' should match to ``producer`` functions' names.
     In case of omitting some kwargs step executed with default set in
-    corresponding producer method (see `producer` interface).
+    corresponding producer method (see ``producer`` interface).
 
     **kwargs : dict {'kwarg': value, ...}, optional (default={})
         Arguments depends on workflow methods.
 
         It is possible to create separate  section for any argument.
-        Set `section_id__configuration_id` for kwarg value, then it would be
-        auto-filled with corresponding section `objects` before step execution.
-        It is also possible to set list of `section_id__configuration_id`s.
-        To prevent auto substitution, set special '_id' postfix `kwarg_id`.
+        Set ``section_id__configuration_id`` as kwarg value, then it would be
+        auto-filled with corresponding object from ``objects`` storage before
+        step execution. List of ``section_id__configuration_id`` is also
+        possible. To prevent auto substitution, set special '_id' postfix
+        ``kwarg_id``.
 
-        If `value` is set to None, parser try to resolve it. First it searches
-        for value in `global`. Then resolver looks up 'kwarg' in section names.
+        If `value` is set to None, parser try to resolve it. First searches for
+        value in ``global``. Then resolver looks up 'kwarg' in section names.
         If such section exist, there are two possibilities:
-        if `kwarg_name` contain '_id' postfix, resolver substitutes None with
-        available `section_id__configuration_id`, otherwise with
+        if 'kwarg' name contains '_id' postfix, resolver substitutes None with
+        available ``section_id__configuration_id``, otherwise with
         configuration object.
-        If fails to find resolution, `value` is remained None. In case of
+        If fails to find resolution, ``value`` is remained None. In case of
         resolution plurality, ValueError is raised.
 
 priority : non-negative integer, optional (default=1)
@@ -89,31 +103,36 @@ priority : non-negative integer, optional (default=1)
 
 global : dict {'kwarg_name': value, ...}, optional (default={})
     Specify values to resolve None for arbitrary kwargs. This is convenient for
-    example when we use the same `pipeline` in all methods. It is not rewrite
+    example when we use the same kwarg in all methods. It is not rewrite
     not-None values.
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
-    All additional keys in configuration are moved to `global` automatically.
-    If is useful if mostly rely on default configuration
+    All additional keys in configuration are moved to ``global`` automatically
+    and rewrite existed. It is useful if mostly rely on default configuration.
 
 Notes
 -----
-Default section(s) configurations can be set in
-`pycnfg.Handler.read(conf, default)`.
+Default configurations can be set in ``pycnfg.Handler.read(conf,
+default_conf=default)``.
 
 Examples
 --------
-# Patch producer with custom functions.
-def my_func(self, *args, **kwargs):
-    # ... custom logic ...
-    return res
+Patch producer with custom functions.
 
-{'patch': {'extra': my_func,},}
+.. code-block::
+
+    def my_func(self, *args, **kwargs):
+        # ... custom logic ...
+        return res
+
+    CNFG = {..{'patch': {'extra': my_func,},}
 
 See Also
 --------
-:class:`pycnfg.Handler`:
-    Reads configurations, executes steps.
+:class:`pycnfg.Handler`: Read configurations, execute steps.
+
+``pycnfg.CNFG``: default configurations.
+
 
 """
 
@@ -123,7 +142,6 @@ import copy
 import heapq
 import importlib.util
 import inspect
-import json
 import sys
 import time
 import types
@@ -140,8 +158,7 @@ class Handler(object):
 
     See Also
     ---------
-    :class:`pycnfg.Producer`:
-        Execute configuration steps.
+    :class:`pycnfg.Producer`: Execute configuration steps.
 
     """
     _required_parameters = []
@@ -158,32 +175,40 @@ class Handler(object):
         conf : dict or str
             Set of configurations:
             {'section_id': {'configuration_id': configuration,},}.
-            If str, absolute path to file with `CNFG` variable.
+            If str, absolute path to file with ``CNFG`` variable.
         default_conf : dict, str, optional (default=None)
             Set of default configurations:
             {'section_id': {'configuration_id': configuration, },}.
-            If str, absolute path to file with `CNFG` variable.
-            If None, read from `pycnfg.CNFG`.
+            If str, absolute path to file with ``CNFG`` variable.
+            If None, read from ``pycnfg.CNFG``.
 
         Returns
         -------
-        configs : list of tuple [('section_id__configuration_id', config),...].
+        configs : list of tuple [('section_id__configuration_id', config),.].
             List of configurations, prepared for execution.
 
         Notes
         -----
-        Apply default:
-        * If section is skipped, default section is used.
-        * If sub-keys are skipped, default values are used for these sub-keys.
+        Apply ``default_conf``:
+
+        * Copy default sections that not in conf.
+        * If sub-keys in some section`s sub-configuration are skipped:
+         Try to find match ``section_id__configuration_id`` in default, if
+         can`t copy from zero position sub-configuration. If default  section
+         not exist at all, use default values for sub-keys: {'init': {},
+         'priority': 1, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
+         'steps': [],}.
 
         Resolve kwargs:
-        * If any step kwarg is None => use value from `global`,
-        * if not in `global` => search `kwarg_id` in 'section_id's,
-        If no section => remain None.
-        If found section:
-            If more then one configurations in section => ValueError.
-            If `kwarg_id` contains postfix '_id', substitute None with
-            `section_id__configuration_id`, otherwise with conf. object.
+
+        * If any step kwarg is None => use value from ``global``.
+        * If not in ``global`` => search 'kwarg_id' in 'section_id's.
+
+            * If no section => remain None.
+            * If section exist:
+             If more then one configurations in section => ValueError.
+             If 'kwarg_id' contains postfix '_id', substitute None with
+             ``section_id__configuration_id``, otherwise with conf. object.
 
         """
         if default_conf is None:
@@ -214,11 +239,12 @@ class Handler(object):
         """Execute configurations in priority.
 
         For each configuration:
-        * initialize producer
-        `producer(`objects`, 'section_id__configuration_id', **kwargs)`,
-        where kwargs took from ('__init__', kwargs) step if provided.
-        * call `producer`.produce(`init`, `steps`).
-        * store result under `section_id__configuration_id` in `objects`.
+
+        * Initialize producer
+         ``producer(objects,``section_id__configuration_id``, **kwargs)``, where
+         kwargs taken from ('__init__', kwargs) step if provided.
+        * call ``producer.produce(init, steps)``.
+        * store result under ``section_id__configuration_id`` in ``objects``.
 
         Parameters
         ----------
@@ -233,11 +259,12 @@ class Handler(object):
         Returns
         -------
         objects : dict
-            Dictionary with resulted objects from `configs` execution"
+            Dictionary with resulted objects from ``configs`` execution"
             {'section_id__config__id': object}
+
         Notes
         -----
-        `producer`/`init` auto initialized.
+        ``producer``/``init`` auto initialized.
 
         Default values for skipped config keys:
         {'init': {}, 'steps': [], 'producer': pycnfg.Producer, 'patch': {},}
@@ -247,7 +274,8 @@ class Handler(object):
             objects = {}
 
         for config in configs:
-            if debug: print(config)
+            if debug:
+                print(config)
             oid, val = config
             objects[oid] = self._exec(oid, val, objects)
         return objects
@@ -256,7 +284,7 @@ class Handler(object):
         # Apply default.
         p = self._merge_default(p, dp)
         # Resolve None inplace for configurations.
-        # `ids` contain used confs ref by section.
+        # ``ids`` contain used confs ref by section.
         ids = {}  # {'section_id': set('configuration_id', )}
         for section_id in p:
             for conf_id in p[section_id]:
@@ -282,10 +310,10 @@ class Handler(object):
 
         * Copy skipped sections from dp (could be multiple confs).
         * Copy skipped sub-keys from dp section(s) of the same name.
-        If dp section contains multiple confs, search for match, otherwise use
-        zero position conf.
+         If dp section contains multiple confs, search for match, otherwise use
+         zero position conf.
         * Fulfill skipped sub-keys for section not existed in dp.
-        {'init': {}, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
+         {'init': {}, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
          'priority': 1, 'steps': [],}
 
         """
@@ -393,6 +421,10 @@ class Handler(object):
                 elif f"{key}_id" in value:
                     key_id = f"{key}_id"
                 if key_id:
+                    # Step kwargs name(except postfix) match with section name.
+                    # Not necessary need to substitute if kwarg name match
+                    # section. Substitute only if None or val match with
+                    # section__conf (on handler level).
                     self._substitute(p, section_id, conf_id, ids,
                                      key, glob_val, subkey, value, key_id)
         return None
@@ -401,54 +433,51 @@ class Handler(object):
                     key, glob_val, subkey, value, key_id):
         # If None use global.
         if not value[key_id]:
-            # If global None use from conf (if only one provided)
+            # If global None use from conf (if only one provided),
             # for metrics not None is guaranteed before.
             if glob_val is None:
                 if len(p[key]) > 1:
                     raise ValueError(
                         f"Multiple {key} configurations provided,"
-                        f" specify key:\n"
-                        f"    '{section_id}:{conf_id}:{subkey}:{key_id}'"
-                        f" or '{section_id}:{conf_id}:global:{key_id}'.")
+                        f" specify '{key_id}' explicit in:\n"
+                        f"    '{section_id}__{conf_id}__{subkey}__{key_id}'"
+                        f" or '{section_id}__{conf_id}__global__{key_id}'.")
                 else:
                     glob_val = f"{key}__{list(p[key].keys())[0]}"
             value[key_id] = glob_val
 
-        # Check if conf available.
+        # [future/deprecated] work, but currently not need ids and checks are
+        #   excesive.
+        # # Check if conf available (for str value), add to ids storage.
         if isinstance(value[key_id], list):
             # for compatibility with sequence of ids (like metric)
-            confs = [i.split('__')[-1] for i in value[key_id]]
+            confs = [i.split('__')[-1] for i in value[key_id]
+                     if isinstance(i, str)]
         else:
-            confs = [value[key_id].split('__')[-1]]
+            confs = [value[key_id].split('__')[-1]]\
+                    if isinstance(value[key_id], str) else []
         for conf in confs:
             if conf not in p[key]:
-                raise ValueError(f"Unknown configuration: {key}__{conf}.")
+                # Not configuration id, remains val lately.
+                pass
+                # raise ValueError(f"Unknown configuration: {conf}"
+                #                  f" in {key} section.")
             elif p[key][conf]['priority'] == 0 \
                     and p[section_id][conf_id]['priority'] != 0:
-                raise ValueError(f"Zero priority configuration {key}__{conf} "
-                                 f"can`t be used in:\n"
-                                 f"    {section_id}__{conf_id}__{subkey}.")
+                # Refer to conf with zero priority, will be remains val lately.
+                pass
+                # raise ValueError(f"Zero priority configuration {key}__{conf}"
+                #                 f" can``t be used in:\n"
+                #                 f"    {section_id}__{conf_id}__{subkey}.")
+            else:
+                # Add name to storage of used confs.
+                ids[key].update(confs)
 
-        # Substitute id(s).
-        ids[key].update(confs)
 
-        # [deprecated] Resolve in Producer.
-        #   there are more reliable and consistent.
-        # ACTUALLy ids can`t contains only names.
-        # # Substitute either id(s), or conf.
-        # if key_id.endswith('_id'):
-        #     ids[key].update(confs)
-        # else:
-        #     # Set reference to `init`,
-        #     # could be problem if object not ready.
-        #     if len(confs) > 1:
-        #         value[key_id] = [p[key][conf]['init'] for conf in confs]
-        #     else:
-        #         value[key_id] = p[key][confs[0]]['init']
         return None
 
     def _priority_arrange(self, res):
-        """Sort configuration by `priority` sub-key."""
+        """Sort configuration by ``priority`` sub-key."""
         min_heap = []
         for key in res:
             for subkey in res[key]:
@@ -486,6 +515,7 @@ class Handler(object):
         elif inspect.isfunction(init):
             init = init()
         if inspect.isclass(producer):
+            # Init producer.
             kwargs = self._init_kwargs(steps)
             producer = producer(objects, oid, **kwargs)
         else:
@@ -494,8 +524,19 @@ class Handler(object):
         return producer.produce(init, steps)
 
     def _init_kwargs(self, steps):
+        """Extract kwargs to init producer."""
+        # Check that first in order or absent.
+        for i, step in enumerate(steps):
+            if step[0] == '__init__' and i != 0:
+                raise ValueError("Method '__init__' should be first in steps.")
+        # Extract and del from list (otherwie produce() will rerun).
         try:
-            kwargs = steps[0][1] if steps[0][0] == '__init__' else {}
+            if steps[0][0] == '__init__':
+                kwargs = steps[0][1]
+                # Move out from steps.
+                del steps[0]
+            else:
+                kwargs = {}
         except IndexError:
             kwargs = {}
         return kwargs
