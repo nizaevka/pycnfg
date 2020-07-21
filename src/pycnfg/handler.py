@@ -2,16 +2,16 @@
 The :mod:`pycnfg.Handler` contains class to read and execute configuration(s).
 
 The purpose of any configuration is to produced result (object) by combining
-resource (steps). Pycnfg offers unified patten to create arbitrary Python
+resources (steps). Pycnfg offers unified patten to create arbitrary Python
 objects pipeline-wise. That naturally allows to control all parameters via
 single configuration.
 
 Configuration is a python dictionary. It supports multiple sections. Each
 section specify set of sub-configurations. Each sub-configuration provide steps
-to construct an object, that can be utilize as argument in some other sections.
-Whole configuration could be passed to ``pycnfg.run`` or user-defined wrapper
-around ``pycnfg.Handler`` to built underlying sub-configuration``s objects one
-by one.
+to construct an object, that can be utilize as argument in other sections.
+Whole configuration could be passed to ``pycnfg.run`` or to user-defined
+wrapper around ``pycnfg.Handler``, that builds underlying sub-configuration``s
+objects one by one.
 
 For each section there is common logic:
 
@@ -19,15 +19,15 @@ For each section there is common logic:
 
     {'section_id':
         'configuration_id 1': {
-            'init': initial object of custom type.
-            'producer': factory class, which contain methods to run steps.
-            'patch': add custom method to class.
+            'init': Initial object state.
+            'producer': Factory class, contained methods to run steps.
+            'patch': Add custom methods to class.
             'steps': [
                 ('method_id 1', {'kwarg_id':value, ..}),
                 ('method_id 2', {'kwarg_id':value, ..}),
             ],
-            'global': shortcut to common parameters.
-            'priority': execute priority (integer non-negative number).
+            'global': Shortcut to common parameters.
+            'priority': Execution priority (integer).
         }
         'configuration_id 2':{
             ...
@@ -36,24 +36,23 @@ For each section there is common logic:
 
 The target for each sub-configuration is to create an instance.
 ``init`` is the template for future object (empty dict() for example).
-``producer`` work as factory, it should contain .produce() method that:
+``producer`` works as factory, it should contain .produce() method that:
 
-* takes ``init`` and consecutive pass it to ``steps`` with specified kwargs.
+* takes ``init`` and consecutive pass it to ``steps`` methods with kwargs.
 
-* return resulting object.
+* returns resulting object.
 
  It can be used as kwargs for any step in others sections. To specify the order
  in which sections handled, the 'priority' key is available in each
- sub-configuration. ``section_id``/``configuration_id`` should not contains
- double underscore '__'.
+ sub-configuration.
 
-For flexibility, it is possible to:
+For flexibility, it is possible:
 
-* Specify default configuration for section(s).
-* Specify global value for common kwargs in steps via ``global`` key.
-* Create separate section for arbitrary parameter in steps.
-* Monkey patch ``producer`` object with custom functions via ``patch`` key.
-* ``init`` can be both an instance, a class or a function
+* To specify default configuration for section(s).
+* To specify global value for common kwargs in steps via ``global`` key.
+* To create separate section for arbitrary parameter in steps.
+* To monkey-patch ``producer`` object with custom functions via ``patch`` key.
+* To set ``init`` as an instance, a class or a function
 
 Configuration keys
 ------------------
@@ -64,13 +63,14 @@ init : callable or instance, optional (default={})
 
 producer : class, optional (default=pycnfg.Producer)
     Factory to construct an object: ``producer.produce(init,steps)``.
-    Class auto initialized: ``producer(objects, 'section_id__configuration_id',
-    **kwargs)``, where ``objects`` is a dictionary with previously created
-    objects {``section_id__configuration_id``: object}. If ('__init__', kwargs)
+    Class auto initialized:
+    ``producer(objects, 'section_id__configuration_id',**kwargs)``, where
+    ``objects`` is a dictionary with previously created objects
+    {``section_id__configuration_id``: object}. If ('__init__', kwargs)
     step provided in ``steps``, kwargs will be passed to initializer.
 
 patch : dict {'method_id' : function}, optional (default={})
-    Monkey-patching ``producer`` object with custom functions.
+    Monkey-patching the ``producer`` object with custom functions.
 
 steps : list of tuples ('method_id', {**kwargs}), optional (default=[])
     List of class methods to run consecutive with kwargs.
@@ -105,21 +105,22 @@ priority : non-negative integer, optional (default=1)
 
 global : dict {'kwarg_name': value, ...}, optional (default={})
     Specify values to resolve None for arbitrary kwargs. This is convenient for
-    example when we use the same kwarg in all methods. It is not rewrite
+    example when we use the same kwarg in all methods. It is doesn't rewrite
     not-None values.
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
-    All additional keys in configuration are moved to ``global`` automatically
-    and rewrite existed. It is useful if mostly rely on default configuration.
+    All additional keys in configuration are moving to ``global`` automatically
+    with replacement. It is useful if mostly rely on default configurations.
 
 Notes
 -----
 Default configurations can be set in ``pycnfg.Handler.read(cnfg,
 dcnfg=default)``.
+``section_id``/``configuration_id`` should not contain double underscore '__'.
 
 Examples
 --------
-Patch producer with custom functions.
+Patching producer with custom functions.
 
 .. code-block::
 
@@ -133,7 +134,7 @@ See Also
 --------
 :class:`pycnfg.Handler`: Read configurations, execute steps.
 
-``pycnfg.CNFG``: default configurations.
+``pycnfg.CNFG``: Default configurations.
 
 
 """

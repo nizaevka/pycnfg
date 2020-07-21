@@ -6,9 +6,9 @@
 Welcome to Pycnfg's documentation!
 ===================================
 
-**Pycnfg** is a tool for Python-based configurations.
+**Pycnfg** is a tool to execute Python-based configuration.
 - Pure Python.
-- Flexible.
+- Flexibility.
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

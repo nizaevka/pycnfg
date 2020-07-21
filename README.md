@@ -14,7 +14,7 @@
 
 **PyCNFG** is a tool to execute Python-based configuration.
 - Pure Python.
-- Flexible.
+- Flexibility.
 
 It offers unified patten to create arbitrary Python objects pipeline-wise. 
 That naturally allows to control all parameters via single file.
@@ -48,7 +48,7 @@ pip install pycnfg[dev]
 docker run -it nizaevka/pycnfg
 ```
 
-Pycnfg is testes on: Python 3.6+.
+Pycnfg is tested on: Python 3.6+.
 
 ## Docs
 [![Docs](https://readthedocs.org/projects/pycnfg/badge/?version=latest)](https://readthedocs.org/pycnfg/en/latest/?badge=latest)

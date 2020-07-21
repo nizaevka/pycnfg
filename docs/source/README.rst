@@ -8,7 +8,7 @@ Documentation for |project| is generated using `Sphinx <http://www.sphinx-doc.or
 Build
 -----
 
-You can build the documentation locally, in docs/ run terminal commands:
+You can build the documentation locally, in terminal under 'docs/' run::
 
 .. code:: sh
 
