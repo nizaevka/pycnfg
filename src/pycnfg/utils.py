@@ -82,7 +82,7 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(conf, default_conf=None, objects=None, beep=False):
+def run(conf, dcnfg=None, objects=None, beep=False):
     """Wrapper over configuration handler.
 
     Parameters
@@ -92,7 +92,7 @@ def run(conf, default_conf=None, objects=None, beep=False):
         {'section_id': {'configuration_id': configuration,}}.
         If str, absolute path to the file with ``CNFG`` variable or relative to
         work dir.
-    default_conf : dict, str, optional (default=None)
+    dcnfg : dict, str, optional (default=None)
         Default configurations to pass in ``pycnfg.Handler.read()``.
         If str, absolute path to file with ``CNFG`` variable or relative to
         work dir.
@@ -119,7 +119,7 @@ def run(conf, default_conf=None, objects=None, beep=False):
         atexit.register(Beep, 400, 2000)  # Will be the first.
 
     handler = pycnfg.Handler()
-    configs = handler.read(conf, default_conf=default_conf)
+    configs = handler.read(conf, dcnfg=dcnfg)
     objects = handler.exec(configs, objects=objects, debug=True)
     return objects
 

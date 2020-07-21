@@ -113,7 +113,7 @@ global : dict {'kwarg_name': value, ...}, optional (default={})
 Notes
 -----
 Default configurations can be set in ``pycnfg.Handler.read(conf,
-default_conf=default)``.
+dcnfg=default)``.
 
 Examples
 --------
@@ -167,7 +167,7 @@ class Handler(object):
         # Save readed files as s under unique id.
         self._readed = {}
 
-    def read(self, conf, default_conf=None):
+    def read(self, conf, dcnfg=None):
         """Read raw configuration and transform to executable.
 
         Parameters
@@ -176,7 +176,7 @@ class Handler(object):
             Set of configurations:
             {'section_id': {'configuration_id': configuration,},}.
             If str, absolute path to file with ``CNFG`` variable.
-        default_conf : dict, str, optional (default=None)
+        dcnfg : dict, str, optional (default=None)
             Set of default configurations:
             {'section_id': {'configuration_id': configuration, },}.
             If str, absolute path to file with ``CNFG`` variable.
@@ -189,7 +189,7 @@ class Handler(object):
 
         Notes
         -----
-        Apply ``default_conf``:
+        Apply default configuration ``dcnfg``:
 
         * Copy default sections that not in conf.
         * If sub-keys in some section`s sub-configuration are skipped:
@@ -211,14 +211,14 @@ class Handler(object):
              ``section_id__configuration_id``, otherwise with conf. object.
 
         """
-        if default_conf is None:
-            default_conf = copy.deepcopy(pycnfg.CNFG)
+        if dcnfg is None:
+            dcnfg = copy.deepcopy(pycnfg.CNFG)
 
         if isinstance(conf, str):
             conf = self._import_cnfg(conf)
-        if isinstance(default_conf, str):
-            default_conf = self._import_cnfg(default_conf)
-        configs = self._parse_conf(conf, default_conf)
+        if isinstance(dcnfg, str):
+            dcnfg = self._import_cnfg(dcnfg)
+        configs = self._parse_conf(conf, dcnfg)
         return configs
 
     def _import_cnfg(self, conf):
@@ -445,34 +445,6 @@ class Handler(object):
                 else:
                     glob_val = f"{key}__{list(p[key].keys())[0]}"
             value[key_id] = glob_val
-
-        # [future/deprecated] work, but currently not need ids and checks are
-        #   excesive.
-        # # Check if conf available (for str value), add to ids storage.
-        if isinstance(value[key_id], list):
-            # for compatibility with sequence of ids (like metric)
-            confs = [i.split('__')[-1] for i in value[key_id]
-                     if isinstance(i, str)]
-        else:
-            confs = [value[key_id].split('__')[-1]]\
-                    if isinstance(value[key_id], str) else []
-        for conf in confs:
-            if conf not in p[key]:
-                # Not configuration id, remains val lately.
-                pass
-                # raise ValueError(f"Unknown configuration: {conf}"
-                #                  f" in {key} section.")
-            elif p[key][conf]['priority'] == 0 \
-                    and p[section_id][conf_id]['priority'] != 0:
-                # Refer to conf with zero priority, will be remains val lately.
-                pass
-                # raise ValueError(f"Zero priority configuration {key}__{conf}"
-                #                 f" can``t be used in:\n"
-                #                 f"    {section_id}__{conf_id}__{subkey}.")
-            else:
-                # Add name to storage of used confs.
-                ids[key].update(confs)
-
 
         return None
 

@@ -45,7 +45,7 @@ CNFG = {
 
 if __name__ == '__main__':
     # Execute configuration(s).
-    objects = pycnfg.run(CNFG, default_conf={})
+    objects = pycnfg.run(CNFG, dcnfg={})
     # => 7
     # => 42
 

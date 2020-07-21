@@ -1,13 +1,14 @@
 """
-Example of configuration flexibility.
-There are three CNFG instances provided equivalent results.
+Example of syntax flexibility.
+There are three CNFG provided equivalent results: set key 'b' with 42 and
+print.
 
 """
 
 import pycnfg
 
 
-class Producer(pycnfg.Producer):
+class CustomProducer(pycnfg.Producer):
     """Specify methods to produce object."""
     def __init__(self, objects, oid):
         # Mandatory.
@@ -22,12 +23,12 @@ class Producer(pycnfg.Producer):
         return obj
 
 
-# Set key 'b' with 42 and print.
+# Explicit.
 CNFG_1 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
-            'producer': Producer,
+            'producer': CustomProducer,
             'steps': [
                 ('set', {'key': 'b', 'val': 42}),
                 ('print', {'key': 'b'}),
@@ -36,12 +37,12 @@ CNFG_1 = {
     }
 }
 
-# Resolve None via 'global' ('val': 42 auto moved to 'global').
+# Resolve None via 'global', 'val' 42 auto moved to 'global').
 CNFG_2 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
-            'producer': Producer,
+            'producer': CustomProducer,
             'val': 42,
             'global': {'key': 'b'},
             'steps': [
@@ -52,12 +53,12 @@ CNFG_2 = {
     }
 }
 
-# Resolve None via separate sections.
+# Resolve None via separate sections, section could be reused multiple times.
 CNFG_3 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
-            'producer': Producer,
+            'producer': CustomProducer,
             'steps': [
                 ('set', {'key': None, 'val': 42}),
                 ('print', {'key': None}),
@@ -79,12 +80,11 @@ CNFG_3 = {
 
 
 if __name__ == '__main__':
-    for conf in [CNFG_1, CNFG_2, CNFG_3]:
+    for cnfg in [CNFG_1, CNFG_2, CNFG_3]:
         # Execute configuration(s).
-        objects = pycnfg.run(conf)
-        # => 7
+        objects = pycnfg.run(cnfg, dcnfg={})
         # => 42
 
         # Storage for produced object(s).
-        print(objects)
+        print(objects['section_id__configuration_id'])
         # => {'a': 7, 'b': 42}

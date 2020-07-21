@@ -59,7 +59,7 @@ def new_dump_cache(self, res, **kwargs):
     res['replace_dump'] = True
     return res
 
-default_conf = {
+dcnfg = {
             'section1': {
                 'config3': {
                     'init': {},
@@ -92,5 +92,5 @@ default_conf = {
             },
         }
 
-objects = pycnfg.run(CNFG, default_conf=default_conf, objects=None)  #'test_run/example_conf.py'
+objects = pycnfg.run(CNFG, dcnfg=dcnfg, objects=None)  #'test_run/example_conf.py'
 print(str(objects))

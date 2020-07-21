@@ -18,6 +18,21 @@ logger.setLevel(1)
 out = {'logger__default': logger, 'path__default': str(workdir)}
 
 
+class CustomProducer(pycnfg.Producer):
+    """Specify methods to produce object."""
+    def __init__(self, objects, oid):
+        # Mandatory.
+        super().__init__(objects, oid)
+
+    def set(self, obj, key, val=42):
+        obj[key] = val
+        return obj
+
+    def print(self, obj, key='a'):
+        print(obj[key])
+        return obj
+
+
 # patch
 def func_1(self, res, param):
     res['param'] = param
@@ -53,27 +68,27 @@ params = [
      ),
     (
         [{}],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         {},
     ),
     (
         [{}],
-        {'default_conf': {}, 'objects': {'a__b': 7}},
+        {'dcnfg': {}, 'objects': {'a__b': 7}},
         {'a__b': 7},
     ),
     (
         [f'{currdir}/example_conf.py'],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         out
     ),
     (
         [{}],
-        {'default_conf': f'{currdir}/example_conf.py'},
+        {'dcnfg': f'{currdir}/example_conf.py'},
         out,
     ),
     (
         [f'{currdir}/example_conf.py'],
-        {'default_conf': f'{currdir}/example_conf.py'},
+        {'dcnfg': f'{currdir}/example_conf.py'},
         out,
     ),
     # Different conf with empty default.
@@ -82,7 +97,7 @@ params = [
         [{'section': {
             'config': {},
         }, }],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         {'section__config': {}},
     ),
     # [v] resolving None
@@ -112,7 +127,7 @@ params = [
                 },
             },
         }],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         {'section1__config1': {}, 'pkg__config': 'pickle'},
     ),
     # V init: callable or instance.
@@ -158,7 +173,7 @@ params = [
                 },
             },
         }],
-        {'default_conf': {
+        {'dcnfg': {
             'section1': {
                 'config3': {
                     'init': {},
@@ -204,10 +219,40 @@ params = [
     ),
     # [v] Resolver global/section (by val/by id).
     # [v] CustomProducer.
+    # [v] __init__
     (
         [f'{currdir}/complex_conf.py'],
         {},
         {**out, 'x__2': 'c', 'y__conf': {'b': 2, 'c': 42, 'print': 252}}
     ),
+    # [v] Separate primitive section.
+    (
+        [{
+            'section_id': {
+                'configuration_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': None, 'val': 42}),
+                        ('print', {'key': None}),
+                    ],
+                }
+            },
+            'key': {
+                'conf': {
+                    'init': 'b',
+                }
+            },
+            'val': {
+                'conf': {
+                    'init': 42,
+                }
+            },
 
+        }],
+        {'dcnfg': {}},
+        {'key__conf': 'b',
+         'section_id__configuration_id': {'a': 7, 'b': 42},
+         'val__conf': 42}
+    ),
 ]
