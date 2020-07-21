@@ -82,7 +82,7 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(cnfg, dcnfg=None, objects=None, beep=False):
+def run(cnfg, dcnfg=None, objects=None, beep=False, debug=False):
     """Wrapper over configuration handler.
 
     Parameters
@@ -101,6 +101,9 @@ def run(cnfg, dcnfg=None, objects=None, beep=False):
         {'object_id': object}.
     beep : bool, optional (default=False)
         If True, play sound notification on ending.
+    debug : bool
+        If True, print executed configuration.
+
 
     Returns
     -------
@@ -120,7 +123,7 @@ def run(cnfg, dcnfg=None, objects=None, beep=False):
 
     handler = pycnfg.Handler()
     configs = handler.read(cnfg, dcnfg=dcnfg)
-    objects = handler.exec(configs, objects=objects, debug=True)
+    objects = handler.exec(configs, objects=objects, debug=debug)
     return objects
 
 

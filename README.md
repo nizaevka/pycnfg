@@ -68,7 +68,6 @@ Check **[examples folder](examples)**.
 
 ## Contribution guide
 - [contribution guide](CONTRIBUTING.md).
-- [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

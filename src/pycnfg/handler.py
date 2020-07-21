@@ -256,7 +256,7 @@ class Handler(object):
         objects : dict, optional (default=None)
             Dict of initial objects. If None, {}.
         debug : bool
-            If True, print executed configuration.
+            If True, print debug information.
 
         Returns
         -------

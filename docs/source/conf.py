@@ -246,6 +246,8 @@ autosummary_imported_members = True  # TODO: what for?
 
 # Example configuration for intersphinx: refer to the Python standard library.
 # Looks for objects in external projects (Libs` api dependent).
+# For example: :py:class:`dict`  :py:class:`exhale.graph.ExhaleRoot`
+#   https://my-favorite-documentation-test.readthedocs.io/en/latest/using_intersphinx.html
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(
         sys.version_info), None),

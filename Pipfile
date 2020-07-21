@@ -4,12 +4,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "==5.3.5"
 sphinxcontrib-napoleon = "*"
 sphinx-autodoc-typehints = "*"
 sphinx-rtd-theme = "*"
 numpydoc = "*"
 sphinx = "*"
+pytest = "*"
 
 [packages]
 e1839a8 = {editable = true,path = "."}
