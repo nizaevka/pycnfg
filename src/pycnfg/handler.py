@@ -9,8 +9,8 @@ single configuration.
 Configuration is a python dictionary. It supports multiple sections. Each
 section specify set of sub-configurations. Each sub-configuration provide steps
 to construct an object, that can be utilize as argument in other sections.
-Whole configuration could be passed to ``pycnfg.run`` or to user-defined
-wrapper around ``pycnfg.Handler``, that builds underlying sub-configuration``s
+Whole configuration could be passed to :class:`pycnfg.run` or to user-defined
+wrapper around :class:`pycnfg.Handler`, that builds target sub-configurations
 objects one by one.
 
 For each section there is common logic:
@@ -43,7 +43,7 @@ The target for each sub-configuration is to create an object.
 * returns resulting object.
 
  That can be used as kwargs for any step in others sections. To specify the
- order in which sections handled, the 'priority' key is available in each
+ order in which sections handled, the ``priority`` key is available in each
  sub-configuration.
 
 For flexibility, it is possible:
