@@ -52,7 +52,8 @@ CNFG_2 = {
     }
 }
 
-# Resolve None via separate sections, section could be reused multiple times.
+# Resolve None via separate sections.
+# Sections could be reused multiple times.
 CNFG_3 = {
     'section_id': {
         'configuration_id': {

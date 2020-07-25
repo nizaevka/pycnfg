@@ -11,7 +11,6 @@ logger = logging.getLogger('default')
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logger.setLevel('INFO')
 
-
 CNFG = {
     'path': {
         'default': {
@@ -35,10 +34,9 @@ CNFG = {
     },
 
 }
-"""Default configuration.
+"""dict: Default configuration.
 
 Specifies logger and project_path objects.
-
 """
 
 

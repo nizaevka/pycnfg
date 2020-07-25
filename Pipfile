@@ -10,6 +10,7 @@ sphinx-rtd-theme = "*"
 numpydoc = "*"
 sphinx = "*"
 pytest = "*"
+coverage = "*"
 
 [packages]
 e1839a8 = {editable = true,path = "."}

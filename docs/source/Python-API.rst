@@ -33,3 +33,13 @@ Callbacks
     find_path
 
 .. .. warning::
+
+.. .. autosummary::
+    :toctree: _pythonapi/
+    CNFG
+
+.. .. automodule:: pycnfg.CNFG
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

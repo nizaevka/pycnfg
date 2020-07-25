@@ -23,8 +23,8 @@ For each section there is common logic:
             'producer': Factory class, contained methods to run steps.
             'patch': Add custom methods to class.
             'steps': [
-                ('method_id 1', {'kwarg_id':value, ..}),
-                ('method_id 2', {'kwarg_id':value, ..}),
+                ('method_id 1', {'kwarg_id': value, ..}),
+                ('method_id 2', {'kwarg_id': value, ..}),
             ],
             'global': Shortcut to common parameters.
             'priority': Execution priority (integer).
@@ -34,39 +34,38 @@ For each section there is common logic:
         }
     }
 
-The target for each sub-configuration is to create an instance.
-``init`` is the template for future object (empty dict() for example).
-``producer`` works as factory, it should contain .produce() method that:
+The target for each sub-configuration is to create an object.
+``init`` is the template for future object (for example empty dict).
+``producer`` works as factory, it should contain ``produce()`` method that:
 
-* takes ``init`` and consecutive pass it to ``steps`` methods with kwargs.
+* takes ``init`` and consecutive pass it and kwargs to ``steps`` methods.
 
 * returns resulting object.
 
- It can be used as kwargs for any step in others sections. To specify the order
- in which sections handled, the 'priority' key is available in each
+ That can be used as kwargs for any step in others sections. To specify the
+ order in which sections handled, the 'priority' key is available in each
  sub-configuration.
 
 For flexibility, it is possible:
 
-* To specify default configuration for section(s).
-* To specify global value for common kwargs in steps via ``global`` key.
-* To create separate section for arbitrary parameter in steps.
-* To monkey-patch ``producer`` object with custom functions via ``patch`` key.
-* To set ``init`` as an instance, a class or a function
+* Specify default configuration for section(s).
+* Specify global value for common kwargs in steps via ``global`` key.
+* Create separate section for arbitrary parameter in steps.
+* Monkey-patch ``producer`` object with custom functions via ``patch`` key.
+* Set ``init`` as an instance, a class or a function
 
 Configuration keys
 ------------------
 
 init : callable or instance, optional (default={})
-    Initial state for constructed object. Will be passed consecutive in steps
-    as argument. If set as callable ``init``() auto called.
+    Initial state for constructing object. Will be passed consecutive in steps
+    as argument. If set as callable ``init``(), auto called.
 
 producer : class, optional (default=pycnfg.Producer)
-    Factory to construct an object: ``producer.produce(init,steps)``.
-    Class auto initialized:
-    ``producer(objects, 'section_id__configuration_id',**kwargs)``, where
-    ``objects`` is a dictionary with previously created objects
-    {``section_id__configuration_id``: object}. If ('__init__', kwargs)
+    The factory to construct an object: ``producer.produce(init,steps)``.
+    Class auto initialized: ``producer(objects, 'section_id__configuration_id',
+    **kwargs)``, where ``objects`` is a dictionary with previously created
+    objects {``section_id__configuration_id``: object}. If ('__init__', kwargs)
     step provided in ``steps``, kwargs will be passed to initializer.
 
 patch : dict {'method_id' : function}, optional (default={})
@@ -82,7 +81,7 @@ steps : list of tuples ('method_id', {**kwargs}), optional (default=[])
     **kwargs : dict {'kwarg': value, ...}, optional (default={})
         Arguments depends on workflow methods.
 
-        It is possible to create separate  section for any argument.
+        It is possible to create separate section for any argument.
         Set ``section_id__configuration_id`` as kwarg value, then it would be
         auto-filled with corresponding object from ``objects`` storage before
         step execution. List of ``section_id__configuration_id`` is also
@@ -110,17 +109,20 @@ global : dict {'kwarg_name': value, ...}, optional (default={})
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
     All additional keys in configuration are moving to ``global`` automatically
-    with replacement. It is useful if mostly rely on default configurations.
+    that rewrites already existed (useful if mostly rely on default).
 
 Notes
 -----
+To add functionality to producer use ``patch`` key or inheritance from
+:class:pycnfg.Producer.
+
 Default configurations can be set in ``pycnfg.Handler.read(cnfg,
 dcnfg=default)``.
 ``section_id``/``configuration_id`` should not contain double underscore '__'.
 
 Examples
 --------
-Patching producer with custom functions.
+Patching producer with custom function.
 
 .. code-block::
 
@@ -134,7 +136,7 @@ See Also
 --------
 :class:`pycnfg.Handler`: Read configurations, execute steps.
 
-``pycnfg.CNFG``: Default configurations.
+:data:`pycnfg.CNFG`: Default configurations.
 
 
 """

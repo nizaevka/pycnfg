@@ -4,3 +4,4 @@ sphinxcontrib-napoleon
 sphinx-autodoc-typehints
 sphinx_rtd_theme
 numpydoc
+coveragepipe

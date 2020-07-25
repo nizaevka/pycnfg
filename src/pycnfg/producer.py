@@ -58,20 +58,23 @@ class Producer(object):
     def produce(self, init, steps):
         """Execute configuration steps.
 
-        consecutive:
-        init = getattr(self, 'method_id')(init, objects=objects, **kwargs)``
+        Consecutive call:
+
+        ``init = getattr(self, 'method_id')(init, objects=objects, **kwargs)``
 
         Parameters
         ----------
         init: object
             Will be passed as arg in each step and get back as result.
-        steps : list of tuples ('method_id', {**kwargs})
-            List of ``self`` methods to run consecutive with kwargs.
+        steps : list of tuples
+            List of ``self`` methods to run consecutive with kwargs:
+            ('method_id', {**kwargs}).
 
         Returns
         -------
-        configs : list of tuple [('section_id__config__id', config), ...]
-            List of configurations, prepared for execution.
+        configs : list of tuple
+            List of configurations, prepared for execution:
+            [('section_id__config__id', config), ...].
 
         Notes
         -----
@@ -100,7 +103,7 @@ class Producer(object):
 
     def dump_cache(self, obj, prefix=None, cachedir=None, pkg='pickle',
                    **kwargs):
-        """Pickle intermediate object state to disk.
+        """Dump intermediate object state to IO.
 
         Parameters
         ----------
@@ -109,9 +112,9 @@ class Producer(object):
         prefix : str, optional (default=None)
             File identifier, added to filename. If None, 'self.oid' is used.
         cachedir : str, optional(default=None)
-            Absolute path dump dir or relative to 'self.project_dir' started
-            with './'. Created, if not exists. If None,"self.project_path/.temp
-            /objects" is used.
+            Absolute path to dump dir or relative to 'self.project_dir' started
+            with './'. Created, if not exists. If None, "self.project_path/
+            .temp/objects" is used.
         pkg : str, optional default('pickle')
             Import package and try ``pkg``.dump(obj, file, **kwargs).
         **kwargs : kwargs
@@ -150,7 +153,7 @@ class Producer(object):
 
     def load_cache(self, obj, prefix=None, cachedir=None, pkg='pickle',
                    **kwargs):
-        """Load intermediate object state from disk.
+        """Load intermediate object state from IO.
 
         Parameters
         ----------
@@ -161,7 +164,7 @@ class Producer(object):
         pkg : str, optional default('pickle')
             Import package and try obj = ``pkg``.load(file, **kwargs).
         cachedir : str, optional(default=None)
-            Absolute path load dir or relative to 'self.project_dir' started
+            Absolute path to load dir or relative to 'self.project_dir' started
             with './'. If None, 'self.project_path/.temp/objects' is used.
         **kwargs : kwargs
             Additional parameters to pass in .load().

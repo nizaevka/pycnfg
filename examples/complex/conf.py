@@ -14,13 +14,13 @@ Internally ``pycnfg.run``:
 
 * Merging user CNFG with default ``pycnfg.CNFG``, so additional sections
  path and logger will be added.
-* Execute available configurations in ``priority`` and add resulted objects to
+* Executes available configurations in ``priority`` and add resulted objects to
  `objects` storage:
 
-    * produce 'path__default'.
-    * produce 'logger__default'.
-    * produce 'x__1', 'x__2'.
-    * produce 'y__conf' using previously created objects.
+    * produces 'path__default'.
+    * produces 'logger__default'.
+    * produces 'x__1', 'x__2'.
+    * produces 'y__conf' using previously created objects.
 
 """
 

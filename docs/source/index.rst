@@ -7,8 +7,13 @@ Welcome to Pycnfg's documentation!
 ===================================
 
 **Pycnfg** is a tool to execute Python-based configuration.
+
 - Pure Python.
-- Flexibility.
+- Flexible.
+
+Pycnfg offers unified patten to create arbitrary Python objects pipeline-wise.
+That naturally allows to control all parameters via single file.
+
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

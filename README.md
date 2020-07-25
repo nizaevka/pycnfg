@@ -14,7 +14,7 @@
 
 **PyCNFG** is a tool to execute Python-based configuration.
 - Pure Python.
-- Flexibility.
+- Flexible.
 
 It offers unified patten to create arbitrary Python objects pipeline-wise. 
 That naturally allows to control all parameters via single file.
@@ -65,6 +65,8 @@ see docs for details ;)
 
 ## Examples
 Check **[examples folder](examples)**.
+
+Check also [MLshell](https://github.com/nizaevka/mlshell) - ML framework based on Pycnfg.
 
 ## Contribution guide
 - [contribution guide](CONTRIBUTING.md).

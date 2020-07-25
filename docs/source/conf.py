@@ -28,6 +28,7 @@ Cookbook:
 # https://github.com/scikit-learn/scikit-learn/blob/master/doc/conf.py#L469
 # https://www.sphinx-doc.org/en/master/usage/extensions/linkcode.html
 
+
 """
 
 
@@ -91,9 +92,10 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.extlinks',
 
-    'numpydoc',
     'sphinxcontrib.napoleon',
     'sphinx_autodoc_typehints',
+
+    'numpydoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -225,6 +227,7 @@ epub_exclude_files = ['search.html']
 
 napoleon_use_param = True
 
+# numpydoc screws around with autosummary.
 # https://github.com/numpy/numpydoc/issues/69
 numpydoc_class_members_toctree = False
 
@@ -239,8 +242,9 @@ autoclass_content = 'class'
 # Generate autosummary pages.
 # Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']
-autosummary_imported_members = True  # TODO: what for?
-
+# A boolean flag indicating whether to document classes and
+# functions imported in modules.
+autosummary_imported_members = True
 
 # -- Options for intersphinx extension ---------------------------------------
 
@@ -248,6 +252,10 @@ autosummary_imported_members = True  # TODO: what for?
 # Looks for objects in external projects (Libs` api dependent).
 # For example: :py:class:`dict`  :py:class:`exhale.graph.ExhaleRoot`
 #   https://my-favorite-documentation-test.readthedocs.io/en/latest/using_intersphinx.html
+#   https://stackoverflow.com/questions/30939867/how-to-properly-write-cross-references-to-external-documentation-with-intersphin/30981554
+#   https://developer.lsst.io/v/DM-15183/python/numpydoc.html
+# Each API have own syntax, check:
+#   python -m sphinx.ext.intersphinx 'uri/objects.inv'
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(
         sys.version_info), None),
@@ -283,6 +291,8 @@ rst_epilog = f"""
 # Make variable dependent links.
 # Access (replace %s on 123):
 #     :github:`ref text <123>`
+
+
 extlinks = {
     'github': (f'https://github.com/{author}/{project}/tree/{version}%s', ''),
     'pypi': (f'https://pypi.org/project/{project}%s', ''),
@@ -290,5 +300,3 @@ extlinks = {
 
     # 'docker': (f'https://github.com/{author}/{project}/tree/{version}%s', '')
 }
-
-#
