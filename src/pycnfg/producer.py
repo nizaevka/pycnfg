@@ -8,6 +8,7 @@ It useful to save time when reusing a configuration.
 """
 
 
+import functools
 import glob
 import importlib
 import logging
@@ -58,7 +59,7 @@ class Producer(object):
     def produce(self, init, steps):
         """Execute configuration steps.
 
-        Consecutive call:
+        Consecutive call (with decorators):
 
         ``init = getattr(self, 'method_id')(init, objects=objects, **kwargs)``
 
@@ -68,7 +69,7 @@ class Producer(object):
             Will be passed as arg in each step and get back as result.
         steps : list of tuples
             List of ``self`` methods to run consecutive with kwargs:
-            ('method_id', {**kwargs}).
+            ('method_id', kwargs, decorators ).
 
         Returns
         -------
@@ -88,13 +89,16 @@ class Producer(object):
         res = init
         for step in steps:
             self.logger.debug(step)
+            # len(step)=3 guaranteed.
             method = step[0]
-            kwargs = step[1] if len(step) > 1 else {}
+            kwargs = step[1]
+            decors = step[2]
             if not isinstance(kwargs, dict):
                 raise ValueError(f"Kwargs for step '{method}' "
                                  f"should be a dictionary.")
             kwargs = self._resolve_object(kwargs, self.objects)
-            res = getattr(self, method)(res, **kwargs)
+            res = functools.reduce(lambda x, y: y(x), decors,
+                                   getattr(self, method))(res, **kwargs)
         # Add identifier.
         if hasattr(res, 'oid'):
             res.oid = self.oid
@@ -115,7 +119,7 @@ class Producer(object):
             Absolute path to dump dir or relative to 'self.project_dir' started
             with './'. Created, if not exists. If None, "self.project_path/
             .temp/objects" is used.
-        pkg : str, optional default('pickle')
+        pkg : str, optional (default='pickle')
             Import package and try ``pkg``.dump(obj, file, **kwargs).
         **kwargs : kwargs
             Additional parameters to pass in .dump().

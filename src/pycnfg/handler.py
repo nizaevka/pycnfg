@@ -1,5 +1,5 @@
 """
-The :mod:`pycnfg.Handler` contains class to read and execute configuration(s).
+The :class:`pycnfg.Handler` contains class to read and execute configuration(s).
 
 The purpose of any configuration is to produced result (object) by combining
 resources (steps). Pycnfg offers unified patten to create arbitrary Python
@@ -53,6 +53,7 @@ For flexibility, it is possible:
 * Create separate section for arbitrary parameter in steps.
 * Monkey-patch ``producer`` object with custom functions via ``patch`` key.
 * Set ``init`` as an instance, a class or a function
+* Set decorators for any step.
 
 Configuration keys
 ------------------
@@ -71,15 +72,15 @@ producer : class, optional (default=pycnfg.Producer)
 patch : dict {'method_id' : function}, optional (default={})
     Monkey-patching the ``producer`` object with custom functions.
 
-steps : list of tuples ('method_id', {**kwargs}), optional (default=[])
-    List of class methods to run consecutive with kwargs.
-    Each step should be a tuple: ``('method_id', {kwargs to use})``,
+steps : list of tuples, optional (default=[])
+    List of ``producer`` methods with kwargs to run consecutive.
+    Each step should be a tuple: ``('method_id', kwargs, decorators)``,
     where 'method_id' should match to ``producer`` functions' names.
-    In case of omitting some kwargs step executed with default set in
-    corresponding producer method (see ``producer`` interface).
+    In case of omitting any kwargs step executed with default, set in
+    corresponding producer method.
 
-    **kwargs : dict {'kwarg': value, ...}, optional (default={})
-        Arguments depends on workflow methods.
+    kwargs : dict, optional (default={})
+        Step arguments: {'kwarg': value, ...}.
 
         It is possible to create separate section for any argument.
         Set ``section_id__configuration_id`` as kwarg value, then it would be
@@ -96,6 +97,9 @@ steps : list of tuples ('method_id', {**kwargs}), optional (default=[])
         configuration object.
         If fails to find resolution, ``value`` is remained None. In case of
         resolution plurality, ValueError is raised.
+
+    decorators: list, optional (default=[])
+        Step decorators from most inner to outer: [decorator,]
 
 priority : non-negative integer, optional (default=1)
     Priority of configuration execution. The more the higher priority.
@@ -144,6 +148,7 @@ See Also
 
 import collections
 import copy
+import functools
 import heapq
 import importlib.util
 import inspect
@@ -246,8 +251,8 @@ class Handler(object):
         For each configuration:
 
         * Initialize producer
-         ``producer(objects,``section_id__configuration_id``, **kwargs)``, where
-         kwargs taken from ('__init__', kwargs) step if provided.
+         ``producer(objects,``section_id__configuration_id``, **kwargs)``,
+         where kwargs taken from ('__init__', kwargs) step if provided.
         * call ``producer.produce(init, steps)``.
         * store result under ``section_id__configuration_id`` in ``objects``.
 
@@ -269,10 +274,7 @@ class Handler(object):
 
         Notes
         -----
-        ``producer``/``init`` auto initialized.
-
-        Default values for skipped config keys:
-        {'init': {}, 'steps': [], 'producer': pycnfg.Producer, 'patch': {},}
+        ``producer``/``init`` auto initialized if needed.
 
         """
         if objects is None:
@@ -317,20 +319,12 @@ class Handler(object):
         * Copy skipped sub-keys from dp section(s) of the same name.
          If dp section contains multiple confs, search for match, otherwise use
          zero position conf.
-        * Fulfill skipped sub-keys for section not existed in dp.
+        * Fill skipped sub-keys for section not existed in dp.
          {'init': {}, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
          'priority': 1, 'steps': [],}
+         * Fill skipped steps {kwargs:{}, decorators:[]}
 
         """
-        dkeys = {
-            'init': {},
-            'producer': pycnfg.Producer,
-            'global': {},
-            'patch': {},
-            'priority': 1,
-            'steps': [],
-        }
-
         for section_id in dp:
             if section_id not in p:
                 # Copy skipped section_ids from dp.
@@ -349,13 +343,42 @@ class Handler(object):
                             conf[subkey] = copy.deepcopy(
                                 dp[section_id][dp_conf_id][subkey])
 
+        dkeys = {
+            'init': {},
+            'producer': pycnfg.Producer,
+            'global': {},
+            'patch': {},
+            'priority': 1,
+            'steps': [],
+        }
         for section_id in p:
             # Add dkeys.
             if section_id not in dp:
                 for conf_id, conf in p[section_id].items():
                     miss_subkeys = set(dkeys)-set(conf)
                     conf.update({key: dkeys[key] for key in miss_subkeys})
+            # Add empty kwargs/decorator to 'steps' (including __init__).
+            for conf_id, conf in p[section_id].items():
+                for i, step in enumerate(conf['steps']):
+                    if not isinstance(step[0], str):
+                        raise TypeError(f"step[0] should be a str:\n"
+                                        f"    {section_id}__{conf_id}")
+                    if len(step) > 1:
+                        if not isinstance(step[1], dict):
+                            raise TypeError(f"step[1] should be a dict:\n"
+                                            f"    {section_id}__{conf_id}:"
+                                            f" {step[0]}")
+                    else:
+                        conf['steps'][i] = (step[0], {}, [])
+                        continue
 
+                    if len(step) > 2:
+                        if not isinstance(step[2], list):
+                            raise TypeError(f"On step[2] should be a list:\n"
+                                            f"    {section_id}__{conf_id}:"
+                                            f" {step[0]}")
+                    else:
+                        conf['steps'][i] = (step[0], step[1], [])
         return p
 
     # [future]
@@ -397,11 +420,12 @@ class Handler(object):
             for step in p[section_id][conf_id]['steps']:
                 if len(step) <= 1:
                     continue
-                subkey, value = step
-                if key_id in value:
+                step_id = step[0]
+                kwargs = step[1]
+                if key_id in kwargs:
                     # if None use global
-                    if not value[key_id]:
-                        value[key_id] = glob_val
+                    if not kwargs[key_id]:
+                        kwargs[key_id] = glob_val
 
         # Keys resolved via separate conf section.
         # two separate check: contain '_id' or not.
@@ -419,11 +443,12 @@ class Handler(object):
             for step in p[section_id][conf_id]['steps']:
                 if len(step) <= 1:
                     continue
-                subkey, value = step
+                step_id = step[0]
+                kwargs = step[1]
                 key_id = None
-                if key in value:
+                if key in kwargs:
                     key_id = key
-                elif f"{key}_id" in value:
+                elif f"{key}_id" in kwargs:
                     key_id = f"{key}_id"
                 if key_id:
                     # Step kwargs name(except postfix) match with section name.
@@ -431,13 +456,13 @@ class Handler(object):
                     # section. Substitute only if None or val match with
                     # section__conf (on handler level).
                     self._substitute(p, section_id, conf_id, ids,
-                                     key, glob_val, subkey, value, key_id)
+                                     key, glob_val, step_id, kwargs, key_id)
         return None
 
     def _substitute(self, p, section_id, conf_id, ids,
-                    key, glob_val, subkey, value, key_id):
+                    key, glob_val, step_id, kwargs, key_id):
         # If None use global.
-        if not value[key_id]:
+        if not kwargs[key_id]:
             # If global None use from conf (if only one provided),
             # for metrics not None is guaranteed before.
             if glob_val is None:
@@ -445,11 +470,11 @@ class Handler(object):
                     raise ValueError(
                         f"Multiple {key} configurations provided,"
                         f" specify '{key_id}' explicit in:\n"
-                        f"    '{section_id}__{conf_id}__{subkey}__{key_id}'"
+                        f"    '{section_id}__{conf_id}__{step_id}__{key_id}'"
                         f" or '{section_id}__{conf_id}__global__{key_id}'.")
                 else:
                     glob_val = f"{key}__{list(p[key].keys())[0]}"
-            value[key_id] = glob_val
+            kwargs[key_id] = glob_val
 
         return None
 
@@ -492,9 +517,10 @@ class Handler(object):
         elif inspect.isfunction(init):
             init = init()
         if inspect.isclass(producer):
-            # Init producer.
-            kwargs = self._init_kwargs(steps)
-            producer = producer(objects, oid, **kwargs)
+            # Init producer with decorators.
+            ikwargs, idecors = self._init_kwargs(steps)
+            producer = functools.reduce(lambda x, y: y(x), idecors,
+                                        producer)(objects, oid, **ikwargs)
         else:
             raise TypeError(f"{oid} producer should be a class.")
         producer = self._patch(patch, producer)
@@ -502,21 +528,23 @@ class Handler(object):
 
     def _init_kwargs(self, steps):
         """Extract kwargs to init producer."""
+        kwargs = {}
+        decors = []
         # Check that first in order or absent.
         for i, step in enumerate(steps):
-            if step[0] == '__init__' and i != 0:
-                raise ValueError("Method '__init__' should be first in steps.")
-        # Extract and del from list (otherwie produce() will rerun).
-        try:
-            if steps[0][0] == '__init__':
+            if step[0] == '__init__':
+                if i != 0:
+                    raise IndexError("Method '__init__' should be"
+                                     " the first in steps.")
+
+                # Extract and del from list, otherwise produce() will execute.
+                # len(step)=3 guaranteed.
                 kwargs = steps[0][1]
+                decors = steps[0][2]
                 # Move out from steps.
                 del steps[0]
-            else:
-                kwargs = {}
-        except IndexError:
-            kwargs = {}
-        return kwargs
+                break
+        return kwargs, decors
 
     def _patch(self, patch, producer):
         """Monkey-patching producer.

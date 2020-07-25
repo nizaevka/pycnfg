@@ -20,9 +20,10 @@ out = {'logger__default': logger, 'path__default': str(workdir)}
 
 class CustomProducer(pycnfg.Producer):
     """Specify methods to produce object."""
-    def __init__(self, objects, oid):
+    def __init__(self, objects, oid, param=None):
         # Mandatory.
         super().__init__(objects, oid)
+        self.param = param
 
     def set(self, obj, key, val=42):
         obj[key] = val
@@ -31,6 +32,14 @@ class CustomProducer(pycnfg.Producer):
     def print(self, obj, key='a'):
         print(obj[key])
         return obj
+
+
+def decorator(func):
+    def wrapper(*args, **kwargs):
+        print('Apply decorator.')
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
 
 
 # patch
@@ -73,7 +82,7 @@ params = [
     ),
     (
         [{}],
-        {'dcnfg': {}, 'objects': {'a__b': 7}},
+        {'dcnfg': {}, 'objects': {'a__b': 7}, 'debug': True, 'beep': True},
         {'a__b': 7},
     ),
     (
@@ -226,6 +235,7 @@ params = [
         {**out, 'x__2': 'c', 'y__conf': {'b': 2, 'c': 42, 'print': 252}}
     ),
     # [v] Separate primitive section.
+    # [v] Empty init and not-init.
     (
         [{
             'section_id': {
@@ -233,8 +243,10 @@ params = [
                     'init': {'a': 7},
                     'producer': CustomProducer,
                     'steps': [
+                        ('__init__',),
                         ('set', {'key': None, 'val': 42}),
                         ('print', {'key': None}),
+                        ('print', ),
                     ],
                     'priority': 2,
                 }
@@ -256,4 +268,25 @@ params = [
          'section_id__configuration_id': {'a': 7, 'b': 42},
          'val__conf': 42}
     ),
+    # [v] decorators (multiple init and non-init)
+    (
+        [{
+            'section_id': {
+                'configuration_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('__init__', {}, [decorator, decorator]),
+                        ('set', {'key': 'b', 'val': 42}, [decorator,
+                                                          decorator]),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 2,
+                }
+            },
+        }],
+        {'dcnfg': {}},
+        {'section_id__configuration_id': {'a': 7, 'b': 42}}
+    ),
+
 ]
