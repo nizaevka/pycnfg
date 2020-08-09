@@ -89,8 +89,11 @@ steps : list of tuples, optional (default=[])
         possible. To prevent auto substitution, set special '_id' postfix
         ``kwarg_id``.
 
+        It`is possible to turn on resolving ``None`` values in kwargs. See
+        ``resolve_none`` argument in :func:`pycnfg.Handler.read` :
         If `value` is set to None, parser try to resolve it. First searches for
-        value in ``global``. Then resolver looks up 'kwarg' in section names.
+        value in sub-cconfiguration ``global``. Then resolver looks up 'kwarg'
+        in section names.
         If such section exist, there are two possibilities:
         if 'kwarg' name contains '_id' postfix, resolver substitutes None with
         available ``section_id__configuration_id``, otherwise with
@@ -106,14 +109,22 @@ priority : non-negative integer, optional (default=1)
     For two conf with same priority order is not guaranteed.
     If zero, not execute configuration.
 
-global : dict {'kwarg_name': value, ...}, optional (default={})
-    Specify values to resolve None for arbitrary kwargs. This is convenient for
-    example when we use the same kwarg in all methods. It is doesn't rewrite
-    not-None values.
+global : dict , optional (default={})
+    Specify values to substitute for any kwargs: ``{'kwarg_name': value, }``.
+    This is convenient for example when the same kwarg used in all methods.
+    It is possible to specify more more targeted path:
+    ``{'step_id__kwarg_name': value, }``
+
+    Additionally, the key ``global`` reserved for the most outer configuration
+    level and section levels to set common kwargs either for all sections
+    or all sub-sections in some section. More targeted versions also possible:
+    ``'section_id__conf_id__step_id__kwarg_name'`` or
+    ``conf_id__step_id__kwarg_name`` . Descending global priority:
+    conf => section => sub-conf.
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
     All additional keys in configuration are moving to ``global`` automatically
-    that rewrites already existed (useful if mostly rely on default).
+    (rewrites already existed).
 
 Notes
 -----
@@ -121,7 +132,11 @@ To add functionality to producer use ``patch`` key or inheritance from
 :class:pycnfg.Producer.
 
 Default configurations can be set in ``pycnfg.Handler.read(cnfg,
-dcnfg=default, objects={})``. Arbitrary objects could be pre-accommodated in
+dcnfg=default, resolve_none={})``.
+
+``pycnfg.Handler.read(cnfg,
+dcnfg=default, objects={})``
+Arbitrary objects could be pre-accommodated in
 ``objects`` argument (without needing to specify configuration).
 ``section_id``/``configuration_id`` should not contain double underscore '__'.
 
@@ -195,9 +210,9 @@ class Handler(object):
             If str, absolute path to file with ``CNFG`` variable.
             If None, read from ``pycnfg.CNFG``.
         resolve_none : bool, optional (default=False)
-            If True, try to resolve None values for step kwargs. If kwarg_name
+            If True, try to resolve None values for step kwargs. If kwarg name
             matches with section name, substitute either zero position conf. id
-            val, depending on if '_id' prefix in kwarg_name.
+            or val, depending on if '_id' prefix in kwarg_name.
 
         Returns
         -------
@@ -216,7 +231,7 @@ class Handler(object):
          'priority': 1, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
          'steps': [],}.
 
-        Resolve kwargs:
+        Resolve None:
 
         * If any step kwarg is None => use value from ``global``.
         * If not in ``global`` => search 'kwarg_id' in 'section_id's.
@@ -428,13 +443,8 @@ class Handler(object):
         # 'global' key exists in all level, that guaranteed in _merge_default.
         # ``unused`` formed here.
 
-        # Configuration level.
-        self._copy_global(p)
-        # Section level.
-        for section_id in p.keys() - {'global'}:
-            self._copy_global(p[section_id])
-        # Sub-configuration level.
-        # Assemble unknown keys to global.
+        # Sub-configuration level, assemble unknown keys to global
+        # (should be before copy from section).
         for section_id in p.keys()-{'global'}:
             for conf_id in p[section_id].keys()-{'global'}:
                 for key in list(p[section_id][conf_id].keys()):
@@ -442,6 +452,17 @@ class Handler(object):
                                    'patch', 'steps', 'priority']:
                         p[section_id][conf_id]['global']\
                             .update({key: p[section_id][conf_id].pop(key)})
+
+        # Configuration level, copy to section.
+        self._copy_global(p)
+
+        # Section level, copy to global.
+        for section_id in p.keys() - {'global'}:
+            self._copy_global(p[section_id])
+
+        # Form set of global keys (remove used later)
+        for section_id in p.keys()-{'global'}:
+            for conf_id in p[section_id].keys()-{'global'}:
                 unused.add(p[section_id][conf_id]['global'])
         return
 
