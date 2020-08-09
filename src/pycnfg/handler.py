@@ -121,8 +121,10 @@ To add functionality to producer use ``patch`` key or inheritance from
 :class:pycnfg.Producer.
 
 Default configurations can be set in ``pycnfg.Handler.read(cnfg,
-dcnfg=default)``.
+dcnfg=default, objects={})``. Arbitrary objects could be pre-accommodated in
+``objects`` argument (without needing to specify configuration).
 ``section_id``/``configuration_id`` should not contain double underscore '__'.
+
 
 Examples
 --------
@@ -149,6 +151,7 @@ See Also
 import collections
 import copy
 import functools
+import gc
 import heapq
 import importlib.util
 import inspect
@@ -177,7 +180,7 @@ class Handler(object):
         # Save readed files as s under unique id.
         self._readed = {}
 
-    def read(self, cnfg, dcnfg=None):
+    def read(self, cnfg, dcnfg=None, resolve_none=False):
         """Read raw configuration and transform to executable.
 
         Parameters
@@ -191,6 +194,10 @@ class Handler(object):
             {'section_id': {'configuration_id': configuration, },}.
             If str, absolute path to file with ``CNFG`` variable.
             If None, read from ``pycnfg.CNFG``.
+        resolve_none : bool, optional (default=False)
+            If True, try to resolve None values for step kwargs. If kwarg_name
+            matches with section name, substitute either zero position conf. id
+            val, depending on if '_id' prefix in kwarg_name.
 
         Returns
         -------
@@ -228,7 +235,7 @@ class Handler(object):
             cnfg = self._import_cnfg(cnfg)
         if isinstance(dcnfg, str):
             dcnfg = self._import_cnfg(dcnfg)
-        configs = self._parse_cnfg(cnfg, dcnfg)
+        configs = self._parse_cnfg(cnfg, dcnfg, resolve_none)
         return configs
 
     def _import_cnfg(self, conf):
@@ -287,15 +294,11 @@ class Handler(object):
             objects[oid] = self._exec(oid, val, objects)
         return objects
 
-    def _parse_cnfg(self, p, dp):
+    def _parse_cnfg(self, p, dp, resolve_none):
         # Apply default.
         p = self._merge_default(p, dp)
-        # Resolve None inplace for configurations.
-        # ``ids`` contain used confs ref by section.
-        ids = {}  # {'section_id': set('configuration_id', )}
-        for section_id in p:
-            for conf_id in p[section_id]:
-                self._resolve_none(p, section_id, conf_id, ids)
+        # Resolve global / None.
+        p = self._resolve(p, resolve_none)
 
         # [deprecated] add -1 priority to skip conf.
         # in common config we need all objects
@@ -322,8 +325,8 @@ class Handler(object):
         * Fill skipped sub-keys for section not existed in dp.
          {'init': {}, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
          'priority': 1, 'steps': [],}
-         * Fill skipped steps {kwargs:{}, decorators:[]}
-
+        * Fill skipped steps {kwargs:{}, decorators:[]}
+        * Add special 'global' to conf level and section level.
         """
         for section_id in dp:
             if section_id not in p:
@@ -352,6 +355,8 @@ class Handler(object):
             'steps': [],
         }
         for section_id in p:
+            if 'global' not in p[section_id]:
+                p[section_id]['global'] = {}
             # Add dkeys.
             if section_id not in dp:
                 for conf_id, conf in p[section_id].items():
@@ -379,6 +384,8 @@ class Handler(object):
                                             f" {step[0]}")
                     else:
                         conf['steps'][i] = (step[0], step[1], [])
+        if 'global' not in p:
+            p['global'] = {}
         return p
 
     # [future]
@@ -396,16 +403,85 @@ class Handler(object):
                     raise TypeError(f"Custom params[{key}]"
                                     f" should be the dict instance.")
 
-    def _resolve_none(self, p, section_id, conf_id, ids):
-        """Auto resolution for None parameters in endpoint section."""
-        # [alternative] update with global when call step.
+    def _resolve(self, p, resolve_none):
+        """Substitute global / resolve None inplace."""
+        # ``used_ids`` contain used conf_ids ref by each section [future].
+        # ``unused_global`` contain unused global to log.
+        unused_global = set  # {'kwarg_id', 'section__conf__kwarg_id',..}
+        used_ids = {}  # {'section_id': set('configuration_id', )}
+        self._resolve_global(p, unused_global)
+        for section_id in p:
+            for conf_id in p[section_id]:
+                self._substitute_global(p[section_id][conf_id], unused_global)
+                if resolve_none:
+                    # Set before substitute to test.
+                    self._resolve_none(p, section_id, conf_id, used_ids)
+        print(f"Warning: Some 'global' keys unused:\n    {unused_global}")
+        return p
 
+    def _resolve_global(self, p, unused):
+        """Resolve global values.
+
+        Descending global priority: conf => section => sub-conf.
+
+        """
+        # 'global' key exists in all level, that guaranteed in _merge_default.
+        # ``unused`` formed here.
+
+        # Configuration level.
+        self._copy_global(p)
+        # Section level.
+        for section_id in p.keys() - {'global'}:
+            self._copy_global(p[section_id])
+        # Sub-configuration level.
         # Assemble unknown keys to global.
-        for key in list(p[section_id][conf_id].keys()):
-            if key not in ['init', 'producer', 'global',
-                           'patch', 'steps', 'priority']:
-                p[section_id][conf_id]['global']\
-                    .update({key: p[section_id][conf_id].pop(key)})
+        for section_id in p.keys()-{'global'}:
+            for conf_id in p[section_id].keys()-{'global'}:
+                for key in list(p[section_id][conf_id].keys()):
+                    if key not in ['init', 'producer', 'global',
+                                   'patch', 'steps', 'priority']:
+                        p[section_id][conf_id]['global']\
+                            .update({key: p[section_id][conf_id].pop(key)})
+                unused.add(p[section_id][conf_id]['global'])
+        return
+
+    def _copy_global(self, p):
+        glob = p['global']
+        # Copy to special subsection.
+        # Special cases:
+        #   section__subconf__step__kwarg for whole
+        #   subconf__step__kwarg for section
+        #   step__kwarg for sub-configuration
+        special = {i for i in glob if glob.split('__')[0] in p.keys()}
+        for i in special:
+            subsection_id = i.split('__')[0]
+            reduced = i.split('__')[1:]
+            p[subsection_id]['global'].update({reduced: glob[i]})
+        # Others copy to all subsection.
+        for i in glob:
+            for subsection_id in p.keys()-{'global'}:
+                p[subsection_id]['global'].update({i: glob[i]})
+        return
+
+    def _substitute_global(self, conf, unused):
+        """Substitute sub-configuration globals."""
+        for glob_id in conf['global']:
+            glob = conf['global'][glob_id]
+            for ind, step in enumerate(conf['steps']):
+                step_id = step[0]
+                for kwarg_id in step[1]:
+                    if glob_id in (kwarg_id, f"{step_id}__{kwarg_id}"):
+                        conf['steps'][ind][1][kwarg_id] = copy.deepcopy(glob)
+                        unused -= glob_id
+        return
+
+    def _resolve_none(self, p, section_id, conf_id, ids):
+        """Auto resolution for None parameters in endpoint section.
+
+        First search in global, second in sections name.
+        """
+        # [alternative] update with global when call step.
+        # TODO: add support for targeting global `func__kwarg`.
 
         # Keys resolved via global. Exist in global and no separate conf.
         primitive = {key for key in p[section_id][conf_id]['global']
@@ -428,7 +504,7 @@ class Handler(object):
                         kwargs[key_id] = glob_val
 
         # Keys resolved via separate conf section.
-        # two separate check: contain '_id' or not.
+        # Two separate check: contain '_id' or not.
         nonprimitive = {key for key in p.keys()}
         for key in nonprimitive:
             # read glob val if exist
@@ -453,13 +529,14 @@ class Handler(object):
                 if key_id:
                     # Step kwargs name(except postfix) match with section name.
                     # Not necessary need to substitute if kwarg name match
-                    # section. Substitute only if None or val match with
-                    # section__conf (on handler level).
-                    self._substitute(p, section_id, conf_id, ids,
+                    # section. Substitute only if None or kwarg match with
+                    # section__conf (on handler level). Here substitue id,
+                    # later in handler val if no id postfix.
+                    self._substitute_none(p, section_id, conf_id, ids,
                                      key, glob_val, step_id, kwargs, key_id)
         return None
 
-    def _substitute(self, p, section_id, conf_id, ids,
+    def _substitute_none(self, p, section_id, conf_id, ids,
                     key, glob_val, step_id, kwargs, key_id):
         # If None use global.
         if not kwargs[key_id]:
@@ -473,6 +550,7 @@ class Handler(object):
                         f"    '{section_id}__{conf_id}__{step_id}__{key_id}'"
                         f" or '{section_id}__{conf_id}__global__{key_id}'.")
                 else:
+                    # Zero position section.
                     glob_val = f"{key}__{list(p[key].keys())[0]}"
             kwargs[key_id] = glob_val
 

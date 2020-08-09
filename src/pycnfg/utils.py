@@ -43,7 +43,7 @@ def find_path(script_name=False, filepath=None):
     def is_ipython():
         """Return True if ipython else False"""
         try:
-            get_ipython = importlib.import_module('IPython', 'get_ipython')
+            get_ipython = importlib.import_module('get_ipython', 'IPython')
             shell = get_ipython().__class__.__name__
             if shell == 'ZMQInteractiveShell':
                 # Jupyter notebook or qtconsole.

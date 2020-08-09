@@ -6,6 +6,10 @@
 Welcome to Pycnfg's documentation!
 ===================================
 
+.. image:: ./_static/images/logo.png
+    :width: 1000
+    :alt: error
+
 **Pycnfg** is a tool to execute Python-based configuration.
 
 - Pure Python.

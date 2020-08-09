@@ -30,6 +30,12 @@ class Producer(object):
         {'section_id__config__id', object}.
     oid : str
         Unique identifier of produced object.
+    path_id: str, optional (default=None)
+        Unique identifier of project path in ``objects``. If None, use start
+        script path.
+    logger_id: str, optional (default=None)
+        Unique identifier of logger in ``objects``. If None, attach new
+        logger to stdout (with ``oid`` name and 'info' level).
 
     Attributes
     ----------
@@ -39,22 +45,29 @@ class Producer(object):
     oid : str
         Unique identifier of produced object.
     logger : logger object
-        Default logger logging.getLogger().
+        Logger.
     project_path: None
-        Absolute path to project dir pycnfg.find_path().
+        Absolute path to project dir.
 
     """
     _required_parameters = ['objects', 'oid']
 
-    def __init__(self, objects, oid):
-        logger = logging.getLogger(oid)
-        logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-        logger.setLevel("INFO")
+    def __init__(self, objects, oid, path_id=None, logger_id=None):
+        if logger_id is None:
+            logger = logging.getLogger(oid)
+            logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+            logger.setLevel("INFO")
+        else:
+            logger = objects[logger_id]
+        if path_id is None:
+            project_path = pycnfg.find_path()
+        else:
+            project_path = objects[path_id]
 
         self.objects = objects
-        self.logger = logger
-        self.project_path = pycnfg.find_path()
         self.oid = oid
+        self.logger = logger
+        self.project_path = project_path
 
     def produce(self, init, steps):
         """Execute configuration steps.
@@ -86,6 +99,10 @@ class Producer(object):
         self.logger.info(f"|__ CONFIGURATION: {self.oid}")
         self.logger.debug(f"steps:\n"
                           f"    {steps}")
+        if self.oid in self.objects:
+            self.logger.warning(f"Identifier '{self.oid}' is already in "
+                                f"'objects', corresponding object will be "
+                                f"updated.")
         res = init
         for step in steps:
             self.logger.debug(step)
@@ -93,14 +110,16 @@ class Producer(object):
             method = step[0]
             kwargs = step[1]
             decors = step[2]
+            self.logger.info(f"    |__ {method.upper()}")
             if not isinstance(kwargs, dict):
                 raise ValueError(f"Kwargs for step '{method}' "
                                  f"should be a dictionary.")
             kwargs = self._resolve_object(kwargs, self.objects)
             res = functools.reduce(lambda x, y: y(x), decors,
                                    getattr(self, method))(res, **kwargs)
-        # Add identifier.
-        if hasattr(res, 'oid'):
+        # Add identifier if provided.
+        # Avoid hasattr(res, 'oid') to prevent execution.
+        if 'oid' in dir(res):
             res.oid = self.oid
         res = self._check(res)
         return res
@@ -116,8 +135,8 @@ class Producer(object):
         prefix : str, optional (default=None)
             File identifier, added to filename. If None, 'self.oid' is used.
         cachedir : str, optional(default=None)
-            Absolute path to dump dir or relative to 'self.project_dir' started
-            with './'. Created, if not exists. If None, "self.project_path/
+            Absolute path to dump dir or relative to 'project_path' started
+            with './'. Created, if not exists. If None, "sproject_path/
             .temp/objects" is used.
         pkg : str, optional (default='pickle')
             Import package and try ``pkg``.dump(obj, file, **kwargs).
@@ -168,8 +187,8 @@ class Producer(object):
         pkg : str, optional default('pickle')
             Import package and try obj = ``pkg``.load(file, **kwargs).
         cachedir : str, optional(default=None)
-            Absolute path to load dir or relative to 'self.project_dir' started
-            with './'. If None, 'self.project_path/.temp/objects' is used.
+            Absolute path to load dir or relative to 'project_path' started
+            with './'. If None, 'project_path/.temp/objects' is used.
         **kwargs : kwargs
             Additional parameters to pass in .load().
 
@@ -202,12 +221,12 @@ class Producer(object):
         """
         for key, val in kwargs.items():
             if not key.endswith('_id'):
-                if not isinstance(val, list):
-                    # For compliance with list.
-                    val = [val]
+                # For compliance with list.
+                val_ = val if isinstance(val, list) else [val]
                 resolved = [objects[v] if isinstance(v, str) and v in objects
-                            else v for v in val]
-                kwargs[key] = resolved if len(val) > 1 else resolved[0]
+                            else v for v in val_]
+                kwargs[key] = resolved if isinstance(val, list)\
+                    else resolved[0]
 
         return kwargs
 
