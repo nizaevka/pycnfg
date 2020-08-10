@@ -1,39 +1,67 @@
 import pycnfg
 
+
+class CustomProducer(pycnfg.Producer):
+    """Specify methods to produce object."""
+    def __init__(self, objects, oid, param=None):
+        # Mandatory.
+        super().__init__(objects, oid)
+        self.param = param
+
+    def set(self, obj, key, val=42):
+        obj[key] = val
+        return obj
+
+    def print(self, obj, key='a'):
+        print(obj[key])
+        return obj
+
+
 CNFG = {
-            'section1': {
-                'config1': {
-                    'init': {},
-                    'producer': pycnfg.Producer,
-                    'global': {},
-                    # Others should get from default section1__config1 (match).
-                },
-                'config2': {
-                    'init': dict,
-                    'producer': pycnfg.Producer,
-                    'global': {},
-                    'priority': 2,
-                    # Others should get from default section1__config3 (zero).
-                },
-                'config4': {
-                    'priority': 0,
+            'global': {
+                'section_id__conf_id__set__key': 'a',
+                'section_id__conf_id__key': 'a',
+                'conf_id__key': 'a',
+                'val': 43,
+            },
+            'section_id': {
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
                 }
             },
-            'section2': {
-                'config2': {
-                     'init': 'cross-section',
-                     'producer': pycnfg.Producer,
-                     'global': {},
-                     'patch': {},
-                     'priority': 1,
-                     'steps': [],
+            'section2_id': {
+                'global': {
+                    'conf2_id__set__key': 'c',
+                    'conf2_id__key': 'c',
+                    'val': '44',
                 },
-                'config3': {
-                    # Needs for list of id/val
-                    'init': 'cross-section2',
+                'conf2_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
                 },
-            },
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+            }
         }
+
 
 def func_1(self, res, param):
     res['param'] = param
@@ -92,5 +120,5 @@ dcnfg = {
             },
         }
 
-objects = pycnfg.run(CNFG, dcnfg=dcnfg, objects=None)  #'test_run/example_conf.py'
+objects = pycnfg.run(CNFG, dcnfg={}, objects=None)  #'test_run/example_conf.py'
 print(str(objects))

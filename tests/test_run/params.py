@@ -71,31 +71,43 @@ def new_dump_cache(self, res, **kwargs):
 params = [
     # Args combinations.
     (
+        0,
         [{}],
         {},
         out,
+    ),
+    (
+        1,
+        [{}],
+        {'resolve_none': True},
+        out,
      ),
     (
+        2,
         [{}],
         {'dcnfg': {}},
         {},
     ),
     (
+        3,
         [{}],
         {'dcnfg': {}, 'objects': {'a__b': 7}, 'debug': True, 'beep': True},
         {'a__b': 7},
     ),
     (
+        4,
         [f'{currdir}/example_conf.py'],
         {'dcnfg': {}},
         out
     ),
     (
+        5,
         [{}],
         {'dcnfg': f'{currdir}/example_conf.py'},
         out,
     ),
     (
+        6,
         [f'{currdir}/example_conf.py'],
         {'dcnfg': f'{currdir}/example_conf.py'},
         out,
@@ -103,6 +115,7 @@ params = [
     # Different conf with empty default.
     # Skip all sub-keys.
     (
+        7,
         [{'section': {
             'config': {},
         }, }],
@@ -114,6 +127,7 @@ params = [
     # [v] global, unknown keys.
     # [v] dump_cache, load_cache
     (
+        8,
         [{
             'section1': {
                 'config1': {
@@ -136,7 +150,7 @@ params = [
                 },
             },
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'resolve_none': True},
         {'section1__config1': {}, 'pkg__config': 'pickle'},
     ),
     # V init: callable or instance.
@@ -148,6 +162,7 @@ params = [
     # V cross-interaction between section.
     # V steps order.
     (
+        9,
         [{
             'section1': {
                 'config1': {
@@ -230,13 +245,15 @@ params = [
     # [v] CustomProducer.
     # [v] __init__
     (
+        10,
         [f'{currdir}/complex_conf.py'],
-        {},
+        {'resolve_none': True},
         {**out, 'x__2': 'c', 'y__conf': {'b': 2, 'c': 42, 'print': 252}}
     ),
     # [v] Separate primitive section.
     # [v] Empty init and not-init.
     (
+        11,
         [{
             'section_id': {
                 'configuration_id': {
@@ -263,13 +280,14 @@ params = [
             },
 
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'resolve_none': True},
         {'key__conf': 'b',
          'section_id__configuration_id': {'a': 7, 'b': 42},
          'val__conf': 42}
     ),
     # [v] decorators (multiple init and non-init)
     (
+        12,
         [{
             'section_id': {
                 'configuration_id': {
@@ -281,12 +299,72 @@ params = [
                                                           decorator]),
                         ('print', {'key': 'a'}),
                     ],
-                    'priority': 2,
+                    'priority': 1,
                 }
             },
         }],
         {'dcnfg': {}},
         {'section_id__configuration_id': {'a': 7, 'b': 42}}
     ),
+    # [v] configuration/section global (special and usual).
+    (
+        13,
+        [{
+            'global': {
+                'section_id__conf_id__set__key': 'a',
+                'section_id__conf_id__key': 'a',
+                'conf_id__key': 'a',
+                'val': 43,
+            },
+            'section_id': {
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                }
+            },
+            'section2_id': {
+                'global': {
+                    'conf2_id__set__key': 'c',
+                    'conf2_id__key': 'c',
+                    'val': '44',
+                },
+                'conf2_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+                'conf3_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+            },
 
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'a': 43},
+            'section2_id__conf2_id': {'a': 7, 'с': 43},
+            'section2_id__conf3_id': {'a': 7, 'b': 43},
+        }
+    ),
+    # TODO: Лучше наоборот локальные больше значения чем глобальные? тогда
+    #       я смогу реже добавлять таргетированные пути и возможно  менять
+    #       сами producer val. вроде логичнее.
+    # добавь в фючи примеры.
+    # [v] transfer dcnfg global.
+    # TODO:
 ]

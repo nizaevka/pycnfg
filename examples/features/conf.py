@@ -83,7 +83,7 @@ CNFG_3 = {
 if __name__ == '__main__':
     for cnfg in [CNFG_1, CNFG_2, CNFG_3]:
         # Execute configuration(s).
-        objects = pycnfg.run(cnfg, dcnfg={})
+        objects = pycnfg.run(cnfg, dcnfg={}, resolve_none=True)
         # => 42
 
         # Storage for produced object(s).

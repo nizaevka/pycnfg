@@ -82,7 +82,8 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(cnfg, dcnfg=None, objects=None, beep=False, debug=False):
+def run(cnfg, dcnfg=None, objects=None, resolve_none=False, beep=False,
+        debug=False):
     """Wrapper over configuration handler.
 
     Parameters
@@ -99,6 +100,10 @@ def run(cnfg, dcnfg=None, objects=None, beep=False, debug=False):
     objects : dict, optional (default=None)
         Dict of initial objects to pass in ``pycnfg.Handler.exec()``:
         {'object_id': object}.
+    resolve_none : bool, optional (default=False)
+        If True, try to resolve None values for step kwargs. If kwarg name
+        matches with section name, substitute either with conf_id on zero
+        position or val, depending on if ``_id`` prefix in ``kwarg_name``.
     beep : bool, optional (default=False)
         If True, play sound notification on ending.
     debug : bool
@@ -122,7 +127,7 @@ def run(cnfg, dcnfg=None, objects=None, beep=False, debug=False):
         atexit.register(Beep, 400, 2000)  # Will be the first.
 
     handler = pycnfg.Handler()
-    configs = handler.read(cnfg, dcnfg=dcnfg)
+    configs = handler.read(cnfg, dcnfg=dcnfg, resolve_none=resolve_none)
     objects = handler.exec(configs, objects=objects, debug=debug)
     return objects
 

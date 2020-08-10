@@ -12,8 +12,8 @@ spec.loader.exec_module(conf_file)
 params = conf_file.params
 
 
-@pytest.mark.parametrize("args,kwargs,expected", params)
-def test_run(args, kwargs, expected):
+@pytest.mark.parametrize("id_,args,kwargs,expected", params)
+def test_run(id_, args, kwargs, expected):
     objects = pycnfg.run(*args, **kwargs)
-    assert objects == expected
+    assert objects == expected, f"test={id_}"
 
