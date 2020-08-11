@@ -34,7 +34,7 @@ class Producer(object):
         Unique identifier of project path in ``objects``. If None, use start
         script path.
     logger_id: str, optional (default=None)
-        Unique identifier of logger in ``objects``. If None, attach new
+        Unique identifier of logger in ``objects``. If None, attach temporary
         logger to stdout (with ``oid`` name and 'info' level).
 
     Attributes
@@ -54,7 +54,8 @@ class Producer(object):
 
     def __init__(self, objects, oid, path_id=None, logger_id=None):
         if logger_id is None:
-            logger = logging.getLogger(oid)
+            # Temporary, garbage collected (in opposite to getLogger(oid))
+            logger = logging.Logger(oid)
             logger.addHandler(logging.StreamHandler(stream=sys.stdout))
             logger.setLevel("INFO")
         else:

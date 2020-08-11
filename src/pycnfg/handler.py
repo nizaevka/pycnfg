@@ -112,8 +112,8 @@ priority : non-negative integer, optional (default=1)
 global : dict , optional (default={})
     Specify values to substitute for any kwargs: ``{'kwarg_name': value, }``.
     This is convenient for example when the same kwarg used in all methods.
-    It is possible to specify more more targeted path:
-    ``{'step_id__kwarg_name': value, }``
+    It is possible to specify more targeted path:
+    ``{'step_id__kwarg_name': value, }``.
 
     Additionally, the key ``global`` reserved for the most outer configuration
     level and sections level to set common kwargs either for all sections
@@ -121,6 +121,9 @@ global : dict , optional (default={})
     ``'section_id__conf_id__step_id__kwarg_name'`` or
     ``conf_id__step_id__kwarg_name`` . Priority of ``global`` keys in
     descending : ``conf => section => sub-conf``.
+
+    Also, it is possible to set up global 'init'/'producer'/'priority'/'patch'/
+    'steps' in 'global' at any level.
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
     All additional keys in configuration are moving to ``global`` automatically
@@ -150,7 +153,28 @@ Patching producer with custom function.
         # ... custom logic ...
         return res
 
-    CNFG = {..{'patch': {'extra': my_func,},}
+    CNFG = {..{'patch': {'extra': my_func,},}}
+
+
+Set second level kwargs for any step, for example kwarg 'c' for 'func':
+
+.. code-block::
+
+    def func(a, b=7, **kwargs):
+        print(kwargs['c'])
+
+    # **kwargs could be set:
+    # Implicitly via 'global'.
+    CNFG = {..{
+        'global': {'kwargs':{'c': 3}}
+        'steps': [('func', {'a': 1)],
+        }}
+    # Explicitly in 'steps'.
+    CNFG = {..{
+        'steps': [('func', {'a': 1, 'c': 3)],
+        }}
+    # In the last case, 'global' could rewrite 'c' directly:
+    # 'global': {'c': 4}
 
 See Also
 --------
@@ -165,7 +189,6 @@ See Also
 import collections
 import copy
 import functools
-import gc
 import heapq
 import importlib.util
 import inspect
@@ -324,7 +347,7 @@ class Handler(object):
         """Add skipped key from default.
 
         * copy cnfg level and section levels 'global' if not exist, otherwise
-        only skipped keys.
+        only skipped keys (not overwrite existed)
         * Copy skipped sections from dp (could be multiple confs).
         * Copy skipped sub-keys from dp section(s) of the same name.
          If dp section contains multiple confs, search for nmae match,
@@ -345,12 +368,18 @@ class Handler(object):
                 tmp.update(p[section_id])
                 p[section_id] = tmp
             else:
-                # Copy skipped sub-keys for existed in dp conf(zero position or
-                # name match). Also work for 'global' on section level.
+                # Copy skipped sub-keys for existed in dp conf (zero position
+                # or name match). Also work for 'global' on section level,
+                # not overwrite existed/
                 dp_conf_ids = list(dp[section_id].keys())
+                if 'global' not in p[section_id]:
+                    # Otherwise not sync section level global.
+                    p[section_id]['global'] = {}
                 for conf_id, conf in p[section_id].items():
                     if conf_id in dp[section_id]:
                         dp_conf_id = conf_id
+                    elif conf_id is 'global':
+                        continue
                     else:
                         # Get zero position dp conf in section.
                         dp_conf_id = dp_conf_ids[0]
@@ -368,14 +397,13 @@ class Handler(object):
             'steps': [],
         }
         for section_id in p.keys()-{'global'}:
-            # Add dkeys.
-            if section_id not in dp:
-                for conf_id, conf in p[section_id].items():
-                    if conf_id is 'global':
-                        continue
-                    miss_subkeys = set(dkeys)-set(conf)
-                    conf.update({key: copy.deepcopy(dkeys[key])
-                                 for key in miss_subkeys})
+            # Add dkeys (in dp also could not be necessary full set).
+            for conf_id, conf in p[section_id].items():
+                if conf_id is 'global':
+                    continue
+                miss_subkeys = set(dkeys)-set(conf)
+                conf.update({key: copy.deepcopy(dkeys[key])
+                             for key in miss_subkeys})
             # Add empty kwargs/decorator to 'steps' (including __init__).
             for conf_id, conf in p[section_id].items():
                 if conf_id is 'global':
@@ -428,7 +456,7 @@ class Handler(object):
         """Substitute global / resolve None inplace."""
         # ``used_ids`` contain used conf_ids ref by each section [future].
         # ``unused_global`` contain unused global to log [future].
-        unused_global = set()  # {'kwarg_id', 'section__conf__kwarg_id',..}
+        unused_global = set()  # {'level_2__section__conf__kwarg_id',..}
         used_ids = {}  # {'section_id': set('configuration_id', )}
         self._resolve_global(p, unused_global)
         for section_id in p.keys()-{'global'}:
@@ -459,49 +487,107 @@ class Handler(object):
                             .update({key: p[section_id][conf_id].pop(key)})
 
         # Configuration level, copy to section.
-        self._copy_global(p)
+        self._copy_global(p, 0)
 
         # Section level, copy to global.
         for section_id in p.keys() - {'global'}:
-            self._copy_global(p[section_id])
+            self._copy_global(p[section_id], 1)
 
         # Form set of all global keys (remove used on substitute).
         for section_id in p.keys()-{'global'}:
             for conf_id in p[section_id].keys()-{'global'}:
+                # Add level prefix on conf global.
+                glob = p[section_id][conf_id]['global']
+                for i in glob:
+                    if 'level_' not in i:
+                        glob[f"level_{2}__{i}"] = glob.pop(i)
+                # Add all to storage.
                 unused.update(p[section_id][conf_id]['global'])
         return
 
-    def _copy_global(self, p):
+    def _copy_global(self, p, level):
+        """
+
+        Parameters
+        ----------
+        p: dict
+            config on current level.
+        level: int
+            0 - most outer, 1 - section , 2 - config.
+
+        """
         glob = p['global']
+        # Add level if not already:
+        for i in list(glob.keys()):
+            if 'level_' not in i:
+                glob[f"level_{level}__{i}"] = glob.pop(i)
         # Copy to special subsection.
         # Special cases:
         #   section__subconf__step__kwarg for whole
         #   subconf__step__kwarg for section
         #   step__kwarg for sub-configuration
-        special = {i for i in glob if i.split('__')[0] in p.keys()}
+        special = {i for i in glob if i.split('__')[1] in p.keys()}
         for i in special:
-            subsection_id = i.split('__')[0]
-            reduced = '__'.join(i.split('__')[1:])
+            lvl = i.split('__')[0]
+            subsection_id = i.split('__')[1]
+            reduced = f'{lvl}__' + '__'.join(i.split('__')[2:])
             assert (reduced != '')
-            p[subsection_id]['global'].update({reduced:
-                                               copy.deepcopy(glob[i])})
+            p[subsection_id]['global'] = {reduced: copy.deepcopy(glob[i]),
+                                          **p[subsection_id]['global']}
         # Others copy to all subsection.
         for i in glob.keys()-special:
             for subsection_id in p.keys()-{'global'}:
-                p[subsection_id]['global'].update({i: copy.deepcopy(glob[i])})
+                p[subsection_id]['global'] = {i: copy.deepcopy(glob[i]),
+                                              **p[subsection_id]['global']}
         # Delete level global (will remains only last).
         del p['global']
         return
 
     def _substitute_global(self, conf, unused):
         """Substitute sub-configuration globals."""
-        for glob_id in conf['global']:
+        # Substitute main keys.
+        for glob_id in sorted(conf['global'].keys()):
+            glob_kw_id = glob_id[9:]  # Cut out prefix 'level_i__'.
+            glob = conf['global'][glob_id]
+            if glob_kw_id in ['init', 'producer', 'priority', 'patch',
+                              'steps']:
+                conf[glob_kw_id] = copy.deepcopy(glob)
+                unused -= {glob_id}
+        # Substitute steps kwargs.
+        for glob_id in sorted(conf['global'].keys()):
+            glob_kw_id = glob_id[9:]  # Cut out prefix 'level_i__'.
             glob = conf['global'][glob_id]
             for ind, step in enumerate(conf['steps']):
                 step_id = step[0]
-                for kwarg_id in step[1]:
-                    if glob_id in (kwarg_id, f"{step_id}__{kwarg_id}"):
-                        conf['steps'][ind][1][kwarg_id] = copy.deepcopy(glob)
+                if step_id in conf['patch']:
+                    func = conf['patch'][step_id]
+                else:
+                    func = getattr(conf['producer'], step_id)
+                insp = inspect.signature(func)
+                # Check if *args/**kwargs in, find names.
+                # ['a', 'b=1', '*args', 'c', 'd=1', '**kwargs'].
+                tmp = [str(i) for i in insp.parameters.values()]
+                w_name = '__'
+                kw_name = '__'
+                for i in tmp:
+                    if '*' in i:
+                        w_name = i.replace('*', '')
+                    if '**' in i:
+                        kw_name = i.replace('**', '')
+                expl = step[1]  # dict
+                # ('a', 'b', 'args', 'c', 'd', 'kwargs')
+                impl = tuple(insp.parameters)
+                mrg = set(expl)
+                mrg.update(impl)
+                for kwarg_id in mrg:
+                    if glob_kw_id in (kwarg_id, f"{step_id}__{kwarg_id}"):
+                        if glob_kw_id == kw_name or glob_kw_id == w_name:
+                            # Add possibility to set second level.
+                            # Step should supports name **kwargs, *args.
+                            conf['steps'][ind][1].update(copy.deepcopy(glob))
+                        else:
+                            conf['steps'][ind][1][kwarg_id] =\
+                                copy.deepcopy(glob)
                         unused -= {glob_id}
         return
 
@@ -511,7 +597,6 @@ class Handler(object):
         First search in global, second in sections name.
         """
         # [alternative] update with global when call step.
-        # TODO: add support for targeting global `func__kwarg`.
 
         # Keys resolved via global. Exist in global and no separate conf.
         primitive = {key for key in p[section_id][conf_id]['global']

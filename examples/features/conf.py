@@ -1,6 +1,9 @@
 """
 Example of configuration syntax.
-There are three CNFG provided equivalent result: set key 'b' with 42 and print.
+There are multiple CNFG provided equivalent result:
+
+* set key 'b' with 42.
+* log.
 
 """
 
@@ -36,8 +39,26 @@ CNFG_1 = {
     }
 }
 
-# Resolve None via 'global', 'val' 42 auto moved to 'global').
+# Use CNFG level 'global' to rewrite 'key' from 'c' to 'b'.
+# Use section level 'global' to rewrite 'val' from '24' on '42'.
 CNFG_2 = {
+    'global': {'key': 'b'},
+    'section_id': {
+        'global': {'val': 42},
+        'configuration_id': {
+            'init': {'a': 7},
+            'producer': CustomProducer,
+            'steps': [
+                ('set', {'key': 'c', 'val': 24}),
+                ('print', {'key': 'c'}),
+            ],
+        }
+    }
+}
+
+# Resolve None via config level 'global',
+# 'val' 42 auto moved to 'global').
+CNFG_3 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
@@ -54,7 +75,7 @@ CNFG_2 = {
 
 # Resolve None via separate sections.
 # Sections could be reused multiple times.
-CNFG_3 = {
+CNFG_4 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
@@ -81,7 +102,7 @@ CNFG_3 = {
 
 
 if __name__ == '__main__':
-    for cnfg in [CNFG_1, CNFG_2, CNFG_3]:
+    for cnfg in [CNFG_1, CNFG_2, CNFG_3, CNFG_4]:
         # Execute configuration(s).
         objects = pycnfg.run(cnfg, dcnfg={}, resolve_none=True)
         # => 42

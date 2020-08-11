@@ -68,6 +68,11 @@ def new_dump_cache(self, res, **kwargs):
     return res
 
 
+def kw_func(self, obj, key,  **kwargs):
+    obj[key] = kwargs['val']
+    return obj
+
+
 params = [
     # Args combinations.
     (
@@ -331,7 +336,7 @@ params = [
                 'global': {
                     'conf2_id__set__key': 'c',
                     'conf2_id__key': 'c',
-                    'val': '44',
+                    'val': 44,
                 },
                 'conf2_id': {
                     'init': {'a': 7},
@@ -357,14 +362,106 @@ params = [
         {'dcnfg': {}},
         {
             'section_id__conf_id': {'a': 43},
-            'section2_id__conf2_id': {'a': 7, 'с': 43},
-            'section2_id__conf3_id': {'a': 7, 'b': 43},
+            'section2_id__conf2_id': {'a': 7, 'c': 44},
+            'section2_id__conf3_id': {'a': 7, 'b': 44},
         }
     ),
-    # TODO: Лучше наоборот локальные больше значения чем глобальные? тогда
-    #       я смогу реже добавлять таргетированные пути и возможно  менять
-    #       сами producer val. вроде логичнее.
-    # добавь в фючи примеры.
     # [v] transfer dcnfg global.
-    # TODO:
+    (
+        14,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                }
+            },
+
+        }],
+        {'dcnfg': {
+            'global': {
+                'conf_id__key': 'a',
+                'val': 43,
+            },
+            'section_id': {
+                'global': {
+                    'conf_id__set__key': 'c',
+                    'val': 44,
+                },
+                'conf_id': {
+                }
+            },
+        }},
+        {
+            'section_id__conf_id': {'a': 7, 'c': 44},
+        }
+    ),
+    # [v] set via global second level kwargs.
+    (
+        15,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'init': {},
+                    'patch': {'set': kw_func},
+                    'global': {'kwargs': {'val': 42}},
+                    'steps': [
+                        ('set', {'key': 'b'},),
+                    ],
+                    'priority': 1,
+                },
+                'conf2_id': {
+                    'init': {},
+                    'patch': {'set': kw_func},
+                    'global': {'val': 42},
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 24},),
+                    ],
+                    'priority': 1,
+                }
+            },
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'b': 42},
+            'section_id__conf2_id': {'b': 42},
+        }
+    ),
+    # Set via global second (init, producer..).
+    (
+        15,
+        [{
+            'global': {'init': {'a': 7}},
+            'section_id': {
+                'global': {'patch': {'set': kw_func}},
+                'conf_id': {
+                    'init': {},
+                    'global': {'kwargs': {'val': 42}},
+                    'steps': [
+                        ('set', {'key': 'b'},),
+                    ],
+                    'priority': 1,
+                },
+                'conf2_id': {
+                    'init': {},
+                    'patch': {'set': kw_func},
+                    'global': {'val': 42},
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 24},),
+                    ],
+                    'priority': 1,
+                }
+            },
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'a': 7, 'b': 42},
+            'section_id__conf2_id': {'a': 7, 'b': 42},
+        }
+    ),
 ]

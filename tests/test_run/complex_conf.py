@@ -120,7 +120,7 @@ CNFG = {
 
 if __name__ == '__main__':
     # Execute configuration(s).
-    objects = pycnfg.run(CNFG)
+    objects = pycnfg.run(CNFG, resolve_none=True)
     # => 42
     # => 42
     # => 42
