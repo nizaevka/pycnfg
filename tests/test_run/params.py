@@ -317,11 +317,14 @@ params = [
         [{
             'global': {
                 'section_id__conf_id__set__key': 'a',
-                'section_id__conf_id__key': 'a',
-                'conf_id__key': 'a',
+                'section_id__conf_id__key': 'e',
+                'conf_id__key': 'd',
                 'val': 43,
             },
             'section_id': {
+                'global': {
+                    'conf_id__print__key': 'a',
+                },
                 'conf_id': {
                     'init': {'a': 7},
                     'producer': CustomProducer,
@@ -347,7 +350,7 @@ params = [
                     ],
                     'priority': 1,
                 },
-                'conf3_id': {
+                'conf_id': {
                     'init': {'a': 7},
                     'producer': CustomProducer,
                     'steps': [
@@ -363,7 +366,7 @@ params = [
         {
             'section_id__conf_id': {'a': 43},
             'section2_id__conf2_id': {'a': 7, 'c': 44},
-            'section2_id__conf3_id': {'a': 7, 'b': 44},
+            'section2_id__conf_id': {'a': 7, 'd': 44},
         }
     ),
     # [v] transfer dcnfg global.
@@ -432,36 +435,34 @@ params = [
             'section_id__conf2_id': {'b': 42},
         }
     ),
-    # Set via global second (init, producer..).
+    # [v] set global (init, producer..).
     (
-        15,
+        16,
         [{
-            'global': {'init': {'a': 7}},
-            'section_id': {
-                'global': {'patch': {'set': kw_func}},
-                'conf_id': {
-                    'init': {},
-                    'global': {'kwargs': {'val': 42}},
-                    'steps': [
-                        ('set', {'key': 'b'},),
-                    ],
-                    'priority': 1,
+            'global': {
+                'section_1__conf_1__set__val': 42,
+                'val': 99,
                 },
-                'conf2_id': {
-                    'init': {},
-                    'patch': {'set': kw_func},
-                    'global': {'val': 42},
+            'steps': [
+                ('set', {'key': 'c', 'val': 24},),
+            ],
+            'producer': CustomProducer,
+
+            'section_1': {
+                'init': {'a': 7},
+                'conf_1': {
                     'steps': [
                         ('set', {'key': 'b', 'val': 24},),
                     ],
-                    'priority': 1,
-                }
-            },
+                },
+                'conf_2': {
+                },
+            }
         }],
         {'dcnfg': {}},
         {
-            'section_id__conf_id': {'a': 7, 'b': 42},
-            'section_id__conf2_id': {'a': 7, 'b': 42},
+            'section_1__conf_1': {'a': 7, 'b': 42},
+            'section_1__conf_2': {'a': 7, 'c': 99},
         }
     ),
 ]
