@@ -37,14 +37,27 @@ For each section there is common logic:
 The target for each sub-configuration is to create an object.
 ``init`` is the template for future object (for example empty dict).
 ``producer`` works as factory, it should contain ``produce()`` method that:
+takes ``init`` and consecutive pass it and kwargs to ``steps`` methods and
+returns resulting object.
 
-* takes ``init`` and consecutive pass it and kwargs to ``steps`` methods.
+.. code-block::
 
-* returns resulting object.
+    # pseudocode
+    def produce(self, init, steps):
+        obj = init
+        for step in steps:
+            obj = decorators(getattr(self, step_id))(obj, objects, **kwargs)
+        return obj
 
- That can be used as kwargs for any step in others sections. To specify the
- order in which sections handled, the ``priority`` key is available in each
- sub-configuration.
+That object will be store in ``objects`` and can be used as kwargs for any
+step in others sections.
+
+.. code-block::
+
+    objects['section_id__conf_id'] = obj
+
+To specify the order in which sections handled, the ``priority`` key is
+available in each sub-configuration.
 
 For flexibility, it is possible:
 
@@ -127,9 +140,9 @@ Notes
 Any configuration key above could be set in the most outer configuration level
 or section level to specify common values either for all sections or all
 sub-sections in some section (Examples below). The more inner level has
-the higher priority, levels priority in ascending: ``conf level => section
-level => sub-conf level``. Supported keys: ``global, init, producer, patch,
-steps, priority``.
+the higher priority, levels priority in ascending: ``conf level (0) => section
+level (1) => sub-conf level (2)``. Supported keys: ``global, init, producer,
+patch, steps, priority``.
     - ``global`` keys from levels are merged according to level priorities.
 Targeted path also possible : ``section_id__conf_id__step_id__kwarg_name`` or
 ``conf_id__step_id__kwarg_name``. On the same level targeted path
@@ -213,7 +226,7 @@ for example kwarg 'c' for step 'func':
     # In the last case, 'global' can address 'c' directly:
     # 'global': {'c': 4}
 
-See more detailed examples in official docs.
+See more detailed examples in :doc:`Examples <Examples>`  .
 
 See Also
 --------
@@ -447,17 +460,6 @@ class Handler(object):
                 for conf_id, conf in dp[section_id].items():
                     if conf_id in dkeys and conf_id not in p[section_id]:
                         p[section_id][conf_id] = copy.deepcopy(conf)
-
-        # [deprecated] more effective to check existence in _resolve, but error-prone.
-        # # Add default dkey to configuration level.
-        # for key in dkeys:
-        #     if key not in p:
-        #         p[key] = copy.deepcopy(dkeys[key])
-        # # Add default dkey to section level.
-        # for key in dkeys:
-        #     for section_id in p.keys()-dkeys.keys():
-        #         if key not in p[section_id]:
-        #             p[section_id][key] = copy.deepcopy(dkeys[key])
         return p
 
     # [future]
@@ -497,7 +499,7 @@ class Handler(object):
         return p
 
     def _resolve_global(self, p, unused):
-        """Resolve global.
+        """Resolve global key.
 
         For each global level, add level prefix and merge to inner level.
         Ascending 'global' level priority: conf => section => sub-conf.
@@ -509,11 +511,14 @@ class Handler(object):
         dkeys = self._dkeys
         for section_id in p.keys()-dkeys.keys():
             for conf_id in p[section_id].keys()-dkeys.keys():
+                found = dict()
                 for key in list(p[section_id][conf_id].keys()):
                     if key not in ['init', 'producer', 'global',
                                    'patch', 'steps', 'priority']:
-                        p[section_id][conf_id]['global']\
-                            .update({key: p[section_id][conf_id].pop(key)})
+                        found.update({key: p[section_id][conf_id].pop(key)})
+                if 'global' not in p[section_id][conf_id]:
+                    p[section_id][conf_id]['global'] = {}
+                p[section_id][conf_id]['global'].update(found)
 
         # Configuration level, copy to section.
         self._copy_global(p, 0)
@@ -535,7 +540,8 @@ class Handler(object):
         return
 
     def _resolve_nonglobal(self, p, unused):
-        """Resolve dkeys except global (auto substitute).
+        """Resolve dkeys (except global) and substitute.
+
         For each sub-conf resolve dkeys in priority:
             sub-conf => section => conf => default dkey.
         Delete outer levels in the end.
@@ -548,7 +554,7 @@ class Handler(object):
             for conf_id, conf in p[section_id].items():
                 if conf_id in dkeys:
                     continue
-                for dkey in dkeys:
+                for dkey in dkeys.keys()-{'global'}:
                     if dkey in conf:
                         continue
                     elif dkey in p[section_id]:
@@ -575,7 +581,6 @@ class Handler(object):
                     else:
                         conf['steps'][i] = (step[0], {}, [])
                         continue
-
                     if len(step) > 2:
                         if not isinstance(step[2], list):
                             raise TypeError(f"On step[2] should be a list:\n"
@@ -599,7 +604,7 @@ class Handler(object):
         return
 
     def _copy_global(self, p, level):
-        """Merge to inner level global.
+        """Merge global to inner level.
 
         Parameters
         ----------
@@ -617,23 +622,8 @@ class Handler(object):
         for i in list(glob.keys()):
             if 'level_' not in i:
                 glob[f"level_{level}__{i}"] = glob.pop(i)
-        # [deprecated] reducing move to substitute.
-        # # Copy to special subsection.
-        # # Special cases:
-        # #   section__subconf__step__kwarg for whole
-        # #   subconf__step__kwarg for section
-        # #   step__kwarg for sub-configuration
-        # special = {i for i in glob if i.split('__')[1] in p.keys()}
-        # for i in special:
-        #     lvl = i.split('__')[0]
-        #     subsection_id = i.split('__')[1]
-        #     reduced = f'{lvl}__' + '__'.join(i.split('__')[2:])
-        #     assert (reduced != '')
-        #     p[subsection_id]['global'] = {reduced: copy.deepcopy(glob[i]),
-        #                                   **p[subsection_id]['global']}
-        special = {}
         # Others copy to all subsection.
-        for i in glob.keys()-special:
+        for i in glob:
             for subsection_id in p.keys()-dkeys.keys():
                 if 'global' not in p[subsection_id]:
                     p[subsection_id]['global'] = {}
@@ -652,16 +642,6 @@ class Handler(object):
             On each level targeted path has higher priority than non-targeted
             (longer name).
         """
-        # [deprecated] no need anymore.
-        # # Substitute main keys.
-        # for glob_id in sorted(conf['global'].keys()):
-        #     glob_kw_id = glob_id[9:]  # Cut out prefix 'level_i__'.
-        #     glob = conf['global'][glob_id]
-        #     if glob_kw_id in ['init', 'producer', 'priority', 'patch',
-        #                       'steps']:
-        #         conf[glob_kw_id] = copy.deepcopy(glob)
-        #         unused -= {glob_id}
-
         # Create set of kwargs kw_set for conf steps: {'step_id__kwarg_id'}.
         kw_set = set()
         # Variable for name of *args/**kwarg argument.
@@ -689,7 +669,6 @@ class Handler(object):
             mrg = set(expl)
             mrg.update(impl)
             kw_set.update({f'{ind}__{step_id}__{i}' for i in mrg})
-
         # Rearrange global:
         # Sort in level priority.
         key1 = lambda x: x.split('__')[0]  # level
@@ -731,8 +710,8 @@ class Handler(object):
                     used_ind.append(ind)
         # Update unused.
         # Remove unused from conf['global']
-        used = set(operator.itemgetter(*used_ind)(glob_lis)) \
-            if used_ind else set()
+        tmp = operator.itemgetter(*used_ind)(glob_lis) if used_ind else []
+        used = set([tmp]) if len(used_ind) == 1 else set(tmp)
         unused -= used
         for i in list(conf['global'].keys()-used):
             del conf['global'][i]
@@ -744,11 +723,9 @@ class Handler(object):
 
         First search in global, second in sections name.
         """
-        # [alternative] update with global when call step.
         # TODO: support for targeted global, currently no need (already set).
         #   Set before substitute to test full workability.
         # TODO: ids support.
-
         # Keys resolved via global. Exist in global and no separate conf.
         primitive = {key for key in p[section_id][conf_id]['global']
                      if key.replace('_id', '') not in p}

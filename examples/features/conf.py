@@ -39,14 +39,16 @@ CNFG_1 = {
     }
 }
 
-# Use CNFG level 'global' to rewrite 'key' from 'c' to 'b'.
+# Use CNFG level:
+#   'init',
+#   'global' to rewrite 'key' from 'c' to 'b'.
 # Use section level 'global' to rewrite 'val' from '24' on '42'.
 CNFG_2 = {
     'global': {'key': 'b'},
+    'init': {'a': 7},
     'section_id': {
         'global': {'val': 42},
         'configuration_id': {
-            'init': {'a': 7},
             'producer': CustomProducer,
             'steps': [
                 ('set', {'key': 'c', 'val': 24}),

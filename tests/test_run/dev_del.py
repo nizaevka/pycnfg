@@ -23,7 +23,16 @@ def kw_func(self, obj, key,  **kwargs):
 
 
 CNFG = {
+            'global': {
+                'section_id__conf_id__set__key': 'a',
+                'section_id__conf_id__key': 'e',
+                'conf_id__key': 'd',
+                'val': 43,
+            },
             'section_id': {
+                'global': {
+                    'conf_id__print__key': 'a',
+                },
                 'conf_id': {
                     'init': {'a': 7},
                     'producer': CustomProducer,
@@ -34,6 +43,32 @@ CNFG = {
                     'priority': 1,
                 }
             },
+            'section2_id': {
+                'global': {
+                    'conf2_id__set__key': 'c',
+                    'conf2_id__key': 'c',
+                    'val': 44,
+                },
+                'conf2_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+            },
+
         }
 
 
@@ -76,5 +111,5 @@ dcnfg = {
             },
         }
 
-objects = pycnfg.run(CNFG, dcnfg=dcnfg, objects=None)  # 'test_run/example_conf.py'
+objects = pycnfg.run(CNFG, dcnfg={}, objects=None)  # 'test_run/example_conf.py'
 print(str(objects))
