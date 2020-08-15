@@ -24,50 +24,35 @@ def kw_func(self, obj, key,  **kwargs):
 
 CNFG = {
             'global': {
-                'section_id__conf_id__set__key': 'a',
-                'section_id__conf_id__key': 'e',
-                'conf_id__key': 'd',
-                'val': 43,
+                'section_id__conf_id__step_id__val': 1,
+                'section_id__step_id__val': 2,
+                'section_id__conf_id__val': 3,
+                'section_id__val': 4,
+                'conf_id__step_id__val': 5,
+                'conf_id__val': 6,
+                'step_id__val': 7,
+                'val': 8,
             },
             'section_id': {
                 'global': {
-                    'conf_id__print__key': 'a',
+                    'conf_id__step_id__val': 9,
+                    'conf_id__val': 10,
+                    'step_id__val': 11,
+                    'val': 12,
                 },
                 'conf_id': {
+                    'global': {
+                        'step_id__val': 13,
+                        'val': 14,
+                    },
                     'init': {'a': 7},
                     'producer': CustomProducer,
+                    'patch': {'step_id': 'set'},
                     'steps': [
-                        ('set', {'key': 'b', 'val': 42},),
-                        ('print', {'key': 'a'}),
+                        ('set', {'key': 'b', 'val': 24},),
                     ],
-                    'priority': 1,
-                }
-            },
-            'section2_id': {
-                'global': {
-                    'conf2_id__set__key': 'c',
-                    'conf2_id__key': 'c',
-                    'val': 44,
                 },
-                'conf2_id': {
-                    'init': {'a': 7},
-                    'producer': CustomProducer,
-                    'steps': [
-                        ('set', {'key': 'b', 'val': 42},),
-                        ('print', {'key': 'a'}),
-                    ],
-                    'priority': 1,
-                },
-                'conf_id': {
-                    'init': {'a': 7},
-                    'producer': CustomProducer,
-                    'steps': [
-                        ('set', {'key': 'b', 'val': 42},),
-                        ('print', {'key': 'a'}),
-                    ],
-                    'priority': 1,
-                },
-            },
+            }
 
         }
 

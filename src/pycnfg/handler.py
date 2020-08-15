@@ -143,12 +143,21 @@ sub-sections in some section (Examples below). The more inner level has
 the higher priority, levels priority in ascending: ``conf level (0) => section
 level (1) => sub-conf level (2)``. Supported keys: ``global, init, producer,
 patch, steps, priority``.
-    - ``global`` keys from levels are merged according to level priorities.
-Targeted path also possible : ``section_id__conf_id__step_id__kwarg_name`` or
-``conf_id__step_id__kwarg_name``. On the same level targeted path
-priority > non-targeted.
-    - other keys are replaced in level priority.
 
+- ``global`` keys from levels are merged according to level priorities.
+Targeted path also possible, in priority:
+
+    * ``section_id__conf_id__step_id__kwarg_name`` on level 0.
+    * ``section_id__step_id__kwarg_name`` on level 0.
+    * ``section_id__conf_id__kwarg_name`` on level 0.
+    * ``section_id__kwarg_name`` on level 0.
+    * ``conf_id__step_id__kwarg_name`` on levels 0,1.
+    * ``conf_id__kwarg_name`` on levels 0,1.
+    * ``step_id__kwarg_name`` on levels 0,1,2.
+    * ``kwarg_name`` on levels 0,1,2.
+On the same level "more" targeted path priority > non-targeted.
+
+- other keys` value are replaced in level priority.
 
 ``section_id``/``configuration_id``/``step_id``/``kwargs_id`` should not
 contain double underscore '__' (except magic methods in ``step_id``).
@@ -498,47 +507,6 @@ class Handler(object):
                   f"    {unused_nonglobal|unused_global}")
         return p
 
-    def _resolve_global(self, p, unused):
-        """Resolve global key.
-
-        For each global level, add level prefix and merge to inner level.
-        Ascending 'global' level priority: conf => section => sub-conf.
-        Targeted path has priority in each level in case of plurality.
-
-        """
-        # Sub-configuration level, assemble unknown keys to global
-        # (should be before copy from section).
-        dkeys = self._dkeys
-        for section_id in p.keys()-dkeys.keys():
-            for conf_id in p[section_id].keys()-dkeys.keys():
-                found = dict()
-                for key in list(p[section_id][conf_id].keys()):
-                    if key not in ['init', 'producer', 'global',
-                                   'patch', 'steps', 'priority']:
-                        found.update({key: p[section_id][conf_id].pop(key)})
-                if 'global' not in p[section_id][conf_id]:
-                    p[section_id][conf_id]['global'] = {}
-                p[section_id][conf_id]['global'].update(found)
-
-        # Configuration level, copy to section.
-        self._copy_global(p, 0)
-
-        # Section level, copy to global.
-        for section_id in p.keys() - dkeys.keys():
-            self._copy_global(p[section_id], 1)
-
-        # Form set of all global keys (remove used on substitute).
-        for section_id in p.keys()-dkeys.keys():
-            for conf_id in p[section_id].keys()-dkeys.keys():
-                # Add level prefix on conf global.
-                glob = p[section_id][conf_id]['global']
-                for i in glob:
-                    if 'level_' not in i:
-                        glob[f"level_{2}__{i}"] = glob.pop(i)
-                # Add all to storage.
-                unused.update(p[section_id][conf_id]['global'])
-        return
-
     def _resolve_nonglobal(self, p, unused):
         """Resolve dkeys (except global) and substitute.
 
@@ -564,6 +532,7 @@ class Handler(object):
                         conf[dkey] = copy.deepcopy(p[dkey])
                         used.add(f"level_0__{dkey}")
                     else:
+                        # Alternative is to pre-set in level_0.
                         conf[dkey] = copy.deepcopy(dkeys[dkey])
             # Add empty kwargs/decorator to 'steps' (including __init__).
             for conf_id, conf in p[section_id].items():
@@ -601,6 +570,47 @@ class Handler(object):
                     dkey_id = f"level_1__{dkey}"
                     if dkey_id not in used:
                         unused.add(dkey_id)
+        return
+
+    def _resolve_global(self, p, unused):
+        """Resolve global key.
+
+        For each global level, add level prefix and merge to inner level.
+        Ascending 'global' level priority: conf => section => sub-conf.
+        Targeted path has priority in each level in case of plurality.
+
+        """
+        # Sub-configuration level, assemble unknown keys to global
+        # (should be before copy from section).
+        dkeys = self._dkeys
+        for section_id in p.keys()-dkeys.keys():
+            for conf_id in p[section_id].keys()-dkeys.keys():
+                found = dict()
+                for key in list(p[section_id][conf_id].keys()):
+                    if key not in ['init', 'producer', 'global',
+                                   'patch', 'steps', 'priority']:
+                        found.update({key: p[section_id][conf_id].pop(key)})
+                if 'global' not in p[section_id][conf_id]:
+                    p[section_id][conf_id]['global'] = {}
+                p[section_id][conf_id]['global'].update(found)
+
+        # Configuration level, copy to section.
+        self._copy_global(p, 0)
+
+        # Section level, copy to global.
+        for section_id in p.keys() - dkeys.keys():
+            self._copy_global(p[section_id], 1)
+
+        # Form set of all global keys (remove used on substitute).
+        for section_id in p.keys()-dkeys.keys():
+            for conf_id in p[section_id].keys()-dkeys.keys():
+                # Add level prefix on conf global.
+                glob = p[section_id][conf_id]['global']
+                for i in list(glob.keys()):
+                    if 'level_' not in i:
+                        glob[f"level_{2}__{i}"] = glob.pop(i)
+                # Add all to storage.
+                unused.update(p[section_id][conf_id]['global'])
         return
 
     def _copy_global(self, p, level):
@@ -644,25 +654,31 @@ class Handler(object):
         """
         # Create set of kwargs kw_set for conf steps: {'step_id__kwarg_id'}.
         kw_set = set()
-        # Variable for name of *args/**kwarg argument.
-        w_name = '__'
-        kw_name = '__'
+        # Variable for name of *args / **kwarg argument.
+        w_name = dict()
+        kw_name = dict()
         for ind, step in enumerate(conf['steps']):
             step_id = step[0]
             if step_id in conf['patch']:
-                func = conf['patch'][step_id]
+                val = conf['patch'][step_id]
+                if isinstance(val, str):
+                    # if str (ref on existed method).
+                    func = getattr(conf['producer'], val)
+                else:
+                    func = val
             else:
                 func = getattr(conf['producer'], step_id)
+            w_name[step_id] = '__'
+            kw_name[step_id] = '__'
             insp = inspect.signature(func)
             # Check if *args/**kwargs in, find names.
-            # ['a', 'b=1', '*args', 'c', 'd=1', '**kwargs'].
+            # [self, 'a', 'b=1', '*args', 'c', 'd=1', '**kwargs'].
             tmp = [str(i) for i in insp.parameters.values()]
-
             for i in tmp:
-                if '*' in i:
-                    w_name = i.replace('*', '')
                 if '**' in i:
-                    kw_name = i.replace('**', '')
+                    kw_name[step_id] = i.replace('**', '')
+                elif '*' in i:
+                    w_name[step_id] = i.replace('*', '')
             expl = step[1]  # dict
             # ('a', 'b', 'args', 'c', 'd', 'kwargs')
             impl = tuple(insp.parameters)
@@ -681,13 +697,16 @@ class Handler(object):
         for i, j in res2:
             glob_lis.extend(sorted(j, key=key2))
         glob_lis = glob_lis[::-1]
-        #   Find index of 'step_id__kwarg_id' from kw_set among
-        #       (-level,-conf,-section) list.
-        glob_kw_lis = [i.replace(f"{section_id}__", '')
-                        .replace(f"{conf_id}__", '')[9:] for i in glob_lis]
+        # Find index of 'step_id__kwarg_id' from kw_set among list (-level,
+        # -conf,-section).
+        # glob_kw_lis contains reduced to step_kwarg/kwarg.
+        glob_kw_lis = glob_lis[:]
+        self._check_duality(section_id, conf_id, conf, glob_kw_lis)
         #   Substitute value with highest index for each kwarg.
         used_ind = []
         for ind, glob_kw in enumerate(glob_kw_lis):
+            if glob_kw is '__':
+                continue
             kw_set_ = list(kw_set)  # Dynamically change.
             for kw in kw_set_:
                 # could be magic method.
@@ -698,7 +717,7 @@ class Handler(object):
                 if glob_kw == f"{step_id}__{kw_id}" or glob_kw == kw_id:
                     glob_id = glob_lis[ind]
                     glob = conf['global'][glob_id]
-                    if kw_id in [kw_name, w_name]:
+                    if kw_id in [kw_name[step_id], w_name[step_id]]:
                         # Step with **kwargs, *args.
                         # Add possibility to set second level.
                         # Would be problem if any name in both: first & second.
@@ -716,6 +735,97 @@ class Handler(object):
         for i in list(conf['global'].keys()-used):
             del conf['global'][i]
 
+        return
+
+    def _check_duality(self, section_id, conf_id, conf, glob_kw_lis):
+        # If path don`t fit, set '__'(but not check last two).
+        # In resolution duality (section vs conf vs step) raise Exception.
+        for ind, name in enumerate(glob_kw_lis):
+            # Remove level
+            level = int(name[6])
+            glob_kw_lis[ind] = name[9:]
+            # List: ['section_id', 'conf_id', ..]
+            # Could be __magic__ paths=step_id.
+            zero_magic = False
+            tmp = name[9:].split('__')
+            if tmp[0] is '':
+                zero_magic = True
+            paths = [i for i in tmp if i]
+            flags = [paths[0] == step[0] if not zero_magic else
+                     f"__{paths[0]}__" == step[0] for step in conf['steps']]
+            # Length of path, except level.
+            lng = len(paths)
+            if lng == 0:
+                assert False, "zero length"
+            if level == 0:
+                if lng == 4:
+                    if not all([paths[0] == section_id, paths[1] == conf_id]):
+                        # Alien.
+                        glob_kw_lis[ind] = '__'
+                    else:
+                        glob_kw_lis[ind] = name[9:]\
+                            .replace(f"{section_id}__", '', 1)\
+                            .replace(f"{conf_id}__", '', 1)
+                elif lng == 3:
+                    # 3 variants:
+                    # section/cnfg, section/step, cnfg/step
+                    if not any([paths[0] == section_id, paths[0] == conf_id]):
+                        # Alien.
+                        glob_kw_lis[ind] = '__'
+                    # Could be better
+                    elif any([section_id == conf_id] +
+                             [section_id == step[0] or
+                              conf_id == step[0] for step in conf['steps']]):
+                        raise ValueError(f"Ambiguous global key resolution:\n"
+                                         f"    {name}")
+                    else:
+                        glob_kw_lis[ind] = name[9:]\
+                            .replace(f"{section_id}__", '', 1)\
+                            .replace(f"{conf_id}__", '', 1)
+                elif lng == 2:
+                    if not any([paths[0] == section_id, paths[0] == conf_id] +
+                               flags):
+                        # Alien.
+                        glob_kw_lis[ind] = '__'
+                    elif (paths[0] == section_id == conf_id or
+                          any(flags)
+                          and (paths[0] == section_id or paths[0] == conf_id)):
+                        raise ValueError(f"Ambiguous global key resolution:\n"
+                                         f"    {name}")
+                    else:
+                        glob_kw_lis[ind] = name[9:]\
+                            .replace(f"{section_id}__", '', 1)\
+                            .replace(f"{conf_id}__", '', 1)
+                elif lng == 1:
+                    pass
+                else:
+                    raise ValueError(f"Too long global kwarg path:\n"
+                                     f"   {name}")
+            elif level == 1:
+                if lng == 3:
+                    if not paths[0] == conf_id:
+                        # Alien.
+                        glob_kw_lis[ind] = '__'
+                    else:
+                        glob_kw_lis[ind] = name[9:]\
+                            .replace(f"{conf_id}__", '', 1)
+                elif lng == 2:
+                    # 2 variant: conf/kwarg of step/kwarg.
+                    if (any(flags)
+                            and paths[0] == conf_id):
+                        raise ValueError(f"Ambiguous global key resolution:\n"
+                                         f"    {name}")
+                elif lng == 1:
+                    pass
+                else:
+                    raise ValueError(f"Too long global kwarg path:\n"
+                                     f"   {name}")
+            elif level == 2:
+                if lng > 2:
+                    raise ValueError(f"Too long global kwarg path:\n"
+                                     f"   {name}")
+            else:
+                assert False, "level>2"
         return
 
     def _resolve_none(self, p, section_id, conf_id, ids):
@@ -878,13 +988,14 @@ class Handler(object):
 
         """
         needs_resolve = []
-        # update/add new methods
+        # Update/add new methods.
         for key, val in patch.items():
             if isinstance(val, str):
                 needs_resolve.append((key, val))
                 patch[key] = producer.__getattribute__(val)
+                continue
             setattr(producer, key, types.MethodType(val, producer))
-        # resolve str name for existed methods
+        # Resolve str name for existed methods.
         for key, name in needs_resolve:
             setattr(producer, key, getattr(producer, name))
         return producer

@@ -14,7 +14,7 @@ logger.setLevel('INFO')
 CNFG = {
     'path': {
         'default': {
-            'init': pycnfg.utils.find_path,
+            'init': pycnfg.find_path,
             'producer': pycnfg.Producer,
             'global': {},
             'patch': {},

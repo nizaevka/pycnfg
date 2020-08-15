@@ -465,4 +465,45 @@ params = [
             'section_1__conf_2': {'a': 7, 'c': 99},
         }
     ),
+    # [v] global all variants.
+    (
+        17,
+        [{
+            'global': {
+                'section_id__conf_id__step_id__val': 1,
+                'section_id__step_id__val': 2,
+                'section_id__conf_id__val': 3,
+                'section_id__val': 4,
+                'conf_id__step_id__val': 5,
+                'conf_id__val': 6,
+                'step_id__val': 7,
+                'val': 8,
+            },
+            'section_id': {
+                'global': {
+                    'conf_id__step_id__val': 9,
+                    'conf_id__val': 10,
+                    'step_id__val': 11,
+                    'val': 12,
+                },
+                'conf_id': {
+                    'global': {
+                        'step_id__val': 13,
+                        'val': 14,
+                    },
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'patch': {'step_id': 'set'},
+                    'steps': [
+                        ('step_id', {'key': 'b', 'val': 24},),
+                    ],
+                },
+            }
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'a': 7, 'b': 13},
+        }
+    ),
 ]
+
