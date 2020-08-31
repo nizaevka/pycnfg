@@ -18,6 +18,30 @@ logger.setLevel(1)
 out = {'logger__default': logger, 'path__default': str(workdir)}
 
 
+class CustomProducer(pycnfg.Producer):
+    """Specify methods to produce object."""
+    def __init__(self, objects, oid, param=None):
+        # Mandatory.
+        super().__init__(objects, oid)
+        self.param = param
+
+    def set(self, obj, key, val=42):
+        obj[key] = val
+        return obj
+
+    def print(self, obj, key='a'):
+        print(obj[key])
+        return obj
+
+
+def decorator(func):
+    def wrapper(*args, **kwargs):
+        print('Apply decorator.')
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+
 # patch
 def func_1(self, res, param):
     res['param'] = param
@@ -44,45 +68,63 @@ def new_dump_cache(self, res, **kwargs):
     return res
 
 
+def kw_func(self, obj, key,  **kwargs):
+    obj[key] = kwargs['val']
+    return obj
+
+
 params = [
     # Args combinations.
     (
+        0,
         [{}],
         {},
+        out,
+    ),
+    (
+        1,
+        [{}],
+        {'resolve_none': True},
         out,
      ),
     (
+        2,
         [{}],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         {},
     ),
     (
+        3,
         [{}],
-        {'default_conf': {}, 'objects': {'a__b': 7}},
+        {'dcnfg': {}, 'objects': {'a__b': 7}, 'debug': True, 'beep': True},
         {'a__b': 7},
     ),
     (
+        4,
         [f'{currdir}/example_conf.py'],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         out
     ),
     (
+        5,
         [{}],
-        {'default_conf': f'{currdir}/example_conf.py'},
+        {'dcnfg': f'{currdir}/example_conf.py'},
         out,
     ),
     (
+        6,
         [f'{currdir}/example_conf.py'],
-        {'default_conf': f'{currdir}/example_conf.py'},
+        {'dcnfg': f'{currdir}/example_conf.py'},
         out,
     ),
     # Different conf with empty default.
     # Skip all sub-keys.
     (
+        7,
         [{'section': {
             'config': {},
         }, }],
-        {'default_conf': {}},
+        {'dcnfg': {}},
         {'section__config': {}},
     ),
     # [v] resolving None
@@ -90,6 +132,7 @@ params = [
     # [v] global, unknown keys.
     # [v] dump_cache, load_cache
     (
+        8,
         [{
             'section1': {
                 'config1': {
@@ -112,7 +155,7 @@ params = [
                 },
             },
         }],
-        {'default_conf': {}},
+        {'dcnfg': {}, 'resolve_none': True},
         {'section1__config1': {}, 'pkg__config': 'pickle'},
     ),
     # V init: callable or instance.
@@ -124,6 +167,7 @@ params = [
     # V cross-interaction between section.
     # V steps order.
     (
+        9,
         [{
             'section1': {
                 'config1': {
@@ -153,12 +197,12 @@ params = [
                      'steps': [],
                 },
                 'config3': {
-                    # Needs for list of id/val
+                    # Needs for list of id/val.
                     'init': 'cross-section2',
                 },
             },
         }],
-        {'default_conf': {
+        {'dcnfg': {
             'section1': {
                 'config3': {
                     'init': {},
@@ -202,4 +246,289 @@ params = [
             }
          },
     ),
+    # [v] Resolver global/section (by val/by id).
+    # [v] CustomProducer.
+    # [v] __init__
+    (
+        10,
+        [f'{currdir}/complex_conf.py'],
+        {'resolve_none': True},
+        {**out, 'x__2': 'c', 'y__conf': {'b': 2, 'c': 42, 'print': 252}}
+    ),
+    # [v] Separate primitive section.
+    # [v] Empty init and not-init.
+    (
+        11,
+        [{
+            'section_id': {
+                'configuration_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('__init__',),
+                        ('set', {'key': None, 'val': 42}),
+                        ('print', {'key': None}),
+                        ('print', ),
+                    ],
+                    'priority': 2,
+                }
+            },
+            'key': {
+                'conf': {
+                    'init': 'b',
+                }
+            },
+            'val': {
+                'conf': {
+                    'init': 42,
+                }
+            },
+
+        }],
+        {'dcnfg': {}, 'resolve_none': True},
+        {'key__conf': 'b',
+         'section_id__configuration_id': {'a': 7, 'b': 42},
+         'val__conf': 42}
+    ),
+    # [v] decorators (multiple init and non-init)
+    (
+        12,
+        [{
+            'section_id': {
+                'configuration_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('__init__', {}, [decorator, decorator]),
+                        ('set', {'key': 'b', 'val': 42}, [decorator,
+                                                          decorator]),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                }
+            },
+        }],
+        {'dcnfg': {}},
+        {'section_id__configuration_id': {'a': 7, 'b': 42}}
+    ),
+    # [v] configuration/section global (special and usual).
+    (
+        13,
+        [{
+            'global': {
+                'section_id__conf_id__set__key': 'a',
+                'section_id__conf_id__key': 'e',
+                'conf_id__key': 'd',
+                'val': 43,
+            },
+            'section_id': {
+                'global': {
+                    'conf_id__print__key': 'a',
+                },
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                }
+            },
+            'section2_id': {
+                'global': {
+                    'conf2_id__set__key': 'c',
+                    'conf2_id__key': 'c',
+                    'val': 44,
+                },
+                'conf2_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+            },
+
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'a': 43},
+            'section2_id__conf2_id': {'a': 7, 'c': 44},
+            'section2_id__conf_id': {'a': 7, 'd': 44},
+        }
+    ),
+    # [v] transfer dcnfg global.
+    (
+        14,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 42},),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                }
+            },
+
+        }],
+        {'dcnfg': {
+            'global': {
+                'conf_id__key': 'a',
+                'val': 43,
+            },
+            'section_id': {
+                'global': {
+                    'conf_id__set__key': 'c',
+                    'val': 44,
+                },
+                'conf_id': {
+                }
+            },
+        }},
+        {
+            'section_id__conf_id': {'a': 7, 'c': 44},
+        }
+    ),
+    # [v] set via global second level kwargs.
+    (
+        15,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'init': {},
+                    'patch': {'set': kw_func},
+                    'global': {'kwargs': {'val': 42}},
+                    'steps': [
+                        ('set', {'key': 'b'},),
+                    ],
+                    'priority': 1,
+                },
+                'conf2_id': {
+                    'init': {},
+                    'patch': {'set': kw_func},
+                    'global': {'val': 42},
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 24},),
+                    ],
+                    'priority': 1,
+                }
+            },
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'b': 42},
+            'section_id__conf2_id': {'b': 42},
+        }
+    ),
+    # [v] set global (init, producer..).
+    (
+        16,
+        [{
+            'global': {
+                'section_1__conf_1__set__val': 42,
+                'val': 99,
+                },
+            'steps': [
+                ('set', {'key': 'c', 'val': 24},),
+            ],
+            'producer': CustomProducer,
+
+            'section_1': {
+                'init': {'a': 7},
+                'conf_1': {
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 24},),
+                    ],
+                },
+                'conf_2': {
+                },
+            }
+        }],
+        {'dcnfg': {}},
+        {
+            'section_1__conf_1': {'a': 7, 'b': 42},
+            'section_1__conf_2': {'a': 7, 'c': 99},
+        }
+    ),
+    # [v] global all variants.
+    (
+        17,
+        [{
+            'global': {
+                'section_id__conf_id__step_id__val': 1,
+                'section_id__step_id__val': 2,
+                'section_id__conf_id__val': 3,
+                'section_id__val': 4,
+                'conf_id__step_id__val': 5,
+                'conf_id__val': 6,
+                'step_id__val': 7,
+                'val': 8,
+            },
+            'section_id': {
+                'global': {
+                    'conf_id__step_id__val': 9,
+                    'conf_id__val': 10,
+                    'step_id__val': 11,
+                    'val': 12,
+                },
+                'conf_id': {
+                    'global': {
+                        'step_id__val': 13,
+                        'val': 14,
+                    },
+                    'init': {'a': 7},
+                    'producer': CustomProducer,
+                    'patch': {'step_id': 'set'},
+                    'steps': [
+                        ('step_id', {'key': 'b', 'val': 24},),
+                    ],
+                },
+            }
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'a': 7, 'b': 13},
+        }
+    ),
+    # [v] dict_api.
+    (
+        18,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'kwargs': {'b': 42},
+                    'steps': [
+                        ('dict_api',),
+                    ],
+                },
+                'conf2_id': {
+                    'b': 42,
+                    'steps': [
+                        ('dict_api', {'b': 43}),
+                    ],
+                },
+            }
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'b': 42},
+            'section_id__conf2_id': {'b': 42},
+        }
+    ),
 ]
+

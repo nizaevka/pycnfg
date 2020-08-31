@@ -2,7 +2,7 @@
 
 ## Issues
 
-We use [GitHub issues](https://github.com/nizaevka/mlshell/issues) for bug reports and feature requests.
+[GitHub issues](https://github.com/nizaevka/pycnfg/issues) for bug reports and feature requests.
 
 #### Step-by-step guide
 
@@ -15,12 +15,12 @@ We use [GitHub issues](https://github.com/nizaevka/mlshell/issues) for bug repor
 
 ##### Bugfix
 
-1. Goto [GitHub issues](https://github.com/nizaevka/mlshell/issues);
+1. Goto [GitHub issues](https://github.com/nizaevka/pycnfg/issues);
 2. Pick an issue and comment on the task that you want to work on this feature;
 3. If you need more context on a specific issue, please ask, and we will discuss the details.
 
 
-Once you finish implementing a feature or bugfix, please send a Pull Request.
+Once you finish implementing a feature or bug-fix, please send a Pull Request.
 
 If you are not familiar with creating a Pull Request, here are some guides:
 - http://stackoverflow.com/questions/14680711/how-to-do-a-github-pull-request
@@ -40,21 +40,12 @@ It's much harder to merge in a large change with a lot of disjoint features.
 4. Make sure that your code passes the unit tests.
 5. Add new unit tests for your code.
 
-#### Codestyle
-
-Do not forget to check the codestyle for your PR with
-
-```bash
-make codestyle
-```
-and add new requirements in the `[isort]` section of a `setup.cfg` file.
-
-Make sure to have your python packages complied with requirements.txt and requirements-dev.txt to get codestyle run clean.
 
 ## Documentation
 
-Mlshell uses [Google style](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) for formatting [docstrings](https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings).
-Length of line inside docstrings block must be limited to 80 characters to fit into Jupyter documentation popups.
+Project uses [Numpy style](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html)
+for formatting docstrings. 
+Length of line inside docstrings block must be limited to 79 characters.
 
 #### Check that you have written working docs
 ```bash

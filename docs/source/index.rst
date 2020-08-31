@@ -1,22 +1,21 @@
-.. mlshell documentation master file, created by
-   sphinx-quickstart on Thu Feb 13 21:22:14 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to MLshell's documentation!
+Welcome to Pycnfg's documentation!
 ===================================
 
-**MLshell** is a framework for ML research and development:
+.. image:: ./_static/images/logo.png
+    :width: 1000
+    :alt: error
 
-- Fast and simple pipeline prototyping and parameters tuning.
-- Unified ml pipeline.
-- Stable CV scheme.
-- Production ready.
-- One conf file rules all.
-- Simple result analyse.
-- Unified plots.
-- Common EDA techniques.
-- Pure python.
+**Pycnfg** is a tool to execute Python-based configuration.
+
+- Pure Python.
+- Flexible.
+
+Pycnfg offers unified patten to create arbitrary Python objects pipeline-wise.
+That naturally allows to control all parameters via single file.
+
+.. image:: ./_static/images/producer.png
+    :width: 1000
+    :alt: error
 
 For more details, please refer to
 `Concepts <Concepts.html>`_.

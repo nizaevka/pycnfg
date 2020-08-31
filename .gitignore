@@ -43,6 +43,7 @@ docs/source/_pythonapi/
 !CONTRIBUTING.md
 
 # ignore pattern everywhere
+del.*
 *$py.class
 *.hprof
 *.pyc
@@ -50,10 +51,12 @@ docs/source/_pythonapi/
 *.rbc
 *.yarb
 *~
-.DS_Store
+.DS_Storegi
 .git
 .hg
 .svn
+.coverage
+.pytest_cache
 CVS/
 __pycache__/
 _svn/

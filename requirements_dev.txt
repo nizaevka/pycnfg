@@ -1,5 +1,7 @@
-pytest==5.3.5
-sphinx==2.4.3
+pytest==5.4.3
+sphinx==3.1.2
 sphinxcontrib-napoleon
 sphinx-autodoc-typehints
 sphinx_rtd_theme
+numpydoc
+coverage

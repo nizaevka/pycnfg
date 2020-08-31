@@ -4,11 +4,17 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+sphinxcontrib-napoleon = "*"
+sphinx-autodoc-typehints = "*"
+sphinx-rtd-theme = "*"
+numpydoc = "*"
+sphinx = "*"
 pytest = "*"
+coverage = "*"
 
 [packages]
 e1839a8 = {editable = true,path = "."}
-pycnfg = {editable = true,path = "."}
+pycnfg = {editable = true,extras = ["dev"],path = "."}
 
 [requires]
 python_version = "3.7"

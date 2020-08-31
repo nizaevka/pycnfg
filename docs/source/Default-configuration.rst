@@ -1,7 +1,11 @@
 Default configuration
 ---------------------
 
-.. .. autodata:: DEFAULT_PARAMS
+.. literalinclude:: /../../src/pycnfg/default.py
+   :language: python
+   :lineno-match:
+
+.. .. autodata:: pycnfg.CNFG
     :annotation:
 
 .. .. autosummary::
@@ -9,7 +13,7 @@ Default configuration
     DEFAULT_PARAMS
     CreateDefaultPipeline
 
-.. automodule:: mlshell.default
+.. .. automodule:: pycnfg.CNFG
     :members:
     :undoc-members:
     :show-inheritance:

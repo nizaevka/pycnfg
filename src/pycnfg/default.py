@@ -9,13 +9,12 @@ __all__ = ['CNFG']
 
 logger = logging.getLogger('default')
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-logger.setLevel(1)
-
+logger.setLevel('INFO')
 
 CNFG = {
     'path': {
         'default': {
-            'init': pycnfg.utils.find_path,
+            'init': pycnfg.find_path,
             'producer': pycnfg.Producer,
             'global': {},
             'patch': {},
@@ -35,7 +34,10 @@ CNFG = {
     },
 
 }
-"""Default configuration."""
+"""dict: Default configuration.
+
+Specifies logger and project_path objects.
+"""
 
 
 if __name__ == '__main__':

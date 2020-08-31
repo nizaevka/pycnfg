@@ -1,46 +1,45 @@
 Python API
 ==========
 
-.. currentmodule:: mlshell
+.. currentmodule:: pycnfg
 
-Logger
-------
+Handler
+-------
 
 .. autosummary::
     :toctree: _pythonapi/
 
-    CreateLogger
+    Handler
 
-Workflow
+Producer
 --------
 
 .. autosummary::
     :toctree: _pythonapi/
 
-    Workflow
+    Producer
 
-Read conf file
---------------
+Utils
+-----
 
 .. autosummary::
     :toctree: _pythonapi/
 
-    GetParams
-
-Callbacks
----------
+    run
 
 .. autosummary::
     :toctree: _pythonapi/
 
     find_path
 
-Plotting
---------
-
-.. autosummary::
-    :toctree: _pythonapi/
-
-    GUI
-
 .. .. warning::
+
+.. .. autosummary::
+    :toctree: _pythonapi/
+    CNFG
+
+.. .. automodule:: pycnfg.CNFG
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
