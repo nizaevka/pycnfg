@@ -19,7 +19,7 @@
 It offers unified patten to create arbitrary Python objects pipeline-wise. 
 That naturally allows to control all parameters via single file.
 
-[![Logic](docs/source/_static/images/producer.png?raw=true)]()
+![Logic](docs/source/_static/images/producer.png?raw=true)
 
 For details, please refer to
  [Concepts](https://pycnfg.readthedocs.io/en/latest/Concepts.html).
