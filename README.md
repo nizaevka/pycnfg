@@ -1,7 +1,6 @@
 <div align="center">
 
-[![Pycnfg logo](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/images/logo.PNG?raw=true)](https://github.com/nizaevka/pycnfg)
-[![Pycnfg logo](docs/source/_static/images/logo.PNG?raw=true)](https://github.com/nizaevka/pycnfg)
+[![Pycnfg logo](docs/source/_static/images/logo.png?raw=true)](https://github.com/nizaevka/pycnfg)
 
 **Flexible Python configurations.**
 
@@ -20,7 +19,7 @@
 It offers unified patten to create arbitrary Python objects pipeline-wise. 
 That naturally allows to control all parameters via single file.
 
-[![Concepts](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/images/producer.png?raw=true)](https://pycnfg.readthedocs.io/en/latest/Concepts.html)
+[![Logic](docs/source/_static/images/producer.png?raw=true)]()
 
 For details, please refer to
  [Concepts](https://pycnfg.readthedocs.io/en/latest/Concepts.html).
