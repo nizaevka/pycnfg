@@ -28,8 +28,8 @@ def find_path(script_name=False, filepath=None):
     script_name : bool, optional (default=False)
         If True, return also script name.
     filepath : str, optional (default=None)
-        Path to main script. If None and Ipython, get from workdir. If None and
-        standard interpreter, get from sys.argv. If sys.argv empty, get from
+        Path to main script. If None: get from sys.argv for standard
+        interpreter, get from workdir for Ipython. If sys.argv empty, get from
         working directory.
 
     Returns
@@ -76,6 +76,7 @@ def find_path(script_name=False, filepath=None):
             .split('/')[-1][:-ext_size]  # run
         project_dir = sys.argv[0]\
             .replace('\\', '/')[:-len(script_name_)-ext_size]
+    print(f"Identified project dir:\n    {project_dir}", flush=True)
     if script_name:
         return project_dir, script_name_
     else:

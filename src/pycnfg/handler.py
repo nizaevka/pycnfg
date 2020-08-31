@@ -165,6 +165,7 @@ contain double underscore '__' (except magic methods in ``step_id``).
 Default configurations can be set in :func:`pycnfg.Handler.read` ``dcnfg``
 argument. Arbitrary objects could be pre-accommodated ``objects`` argument in
 :func:`pycnfg.Handler.exec` , so no need to specify configurations for them.
+If any provided it has priority over sub-configuration with the same id.
 
 To add functionality to producer use ``patch`` key or inheritance from
 :class:`pycnfg.Producer` .
@@ -301,7 +302,7 @@ class Handler(object):
             Set of default configurations:
             {'section_id': {'configuration_id': configuration, },}.
             If str, absolute path to file with ``CNFG`` variable.
-            If None, read from ``pycnfg.CNFG``.
+            If None, use :data:`pycnfg.CNFG` .
         resolve_none : bool, optional (default=False)
             If True, try to resolve None values for step kwargs. If kwarg name
             matches with section name, substitute either with conf_id on zero
@@ -399,8 +400,12 @@ class Handler(object):
 
         for config in configs:
             if debug:
-                print(config)
+                print(config, flush=True)
             oid, val = config
+            if oid in objects:
+                print(f"Warninig: Identifier '{oid}' is already in "
+                      f"'objects', original object remains.", flush=True)
+                continue
             objects[oid] = self._exec(oid, val, objects)
         return objects
 
@@ -504,7 +509,7 @@ class Handler(object):
                     self._resolve_none(p, section_id, conf_id, used_ids)
         if unused_nonglobal or unused_global:
             print(f"Warning: Unused global key(s):\n"
-                  f"    {unused_nonglobal|unused_global}")
+                  f"    {unused_nonglobal|unused_global}", flush=True)
         return p
 
     def _resolve_nonglobal(self, p, unused):
@@ -949,7 +954,7 @@ class Handler(object):
         elif inspect.isfunction(init):
             init = init()
         if inspect.isclass(producer):
-            # Init producer with decorators.
+            # Init producer with __init__() decorators.
             ikwargs, idecors = self._init_kwargs(steps)
             producer = functools.reduce(lambda x, y: y(x), idecors,
                                         producer)(objects, oid, **ikwargs)

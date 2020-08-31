@@ -3,7 +3,8 @@ The :mod:`pycnfg.produce` includes class to produce configuration object.
 Use it as Mixin to add desired endpoints.
 
 Support method to cache/read intermediate state of object (pickle/unpickle).
-It useful to save time when reusing a configuration.
+It useful to save time when reusing a configuration. Also python dictionary api
+forwarding is supported.
 
 """
 
@@ -21,7 +22,7 @@ import pycnfg
 class Producer(object):
     """Execute configuration steps.
 
-    Interface: produce, dump_cache, load_cache.
+    Interface: produce, dump_cache, load_cache, dict_api.
 
     Parameters
     ----------
@@ -30,12 +31,13 @@ class Producer(object):
         {'section_id__config__id', object}.
     oid : str
         Unique identifier of produced object.
-    path_id: str, optional (default=None)
-        Unique identifier of project path in ``objects``. If None, use start
-        script path.
-    logger_id: str, optional (default=None)
-        Unique identifier of logger in ``objects``. If None, attach temporary
-        logger to stdout (with ``oid`` name and 'info' level).
+    path_id: str, optional (default='path_default')
+        Unique identifier of project path in ``objects``. If not exist, raise
+        error if used by producer.
+    logger_id: str, optional (default='logger_default')
+        Unique identifier of logger either in ``objects`` or
+        :data:`logging.root.manager.loggerDict` . If not found, attach
+        new logger to stdout (with logger_id name and 'info' level).
 
     Attributes
     ----------
@@ -52,18 +54,24 @@ class Producer(object):
     """
     _required_parameters = ['objects', 'oid']
 
-    def __init__(self, objects, oid, path_id=None, logger_id=None):
-        if logger_id is None:
-            # Temporary, garbage collected (in opposite to getLogger(oid))
-            logger = logging.Logger(oid)
+    def __init__(self, objects, oid, path_id='path__default',
+                 logger_id='logger__default'):
+        if logger_id in objects:
+            logger = objects[logger_id]
+        elif logger_id in logging.root.manager.loggerDict:
+            logger = logging.getLogger(logger_id)
+        else:
+            # Temporary, garbage collected (in opposite to getLogger())
+            logger = logging.Logger(logger_id)
             logger.addHandler(logging.StreamHandler(stream=sys.stdout))
             logger.setLevel("INFO")
-        else:
-            logger = objects[logger_id]
-        if path_id is None:
-            project_path = pycnfg.find_path()
-        else:
+
+        if path_id in objects:
             project_path = objects[path_id]
+        else:
+            # Should be set either in objects or as configuration.
+            # Otherwise double execution for path config.
+            project_path = None
 
         self.objects = objects
         self.oid = oid
@@ -99,14 +107,11 @@ class Producer(object):
         """
         self.logger.info(f"|__ CONFIGURATION: {self.oid}")
         self.logger.debug(f"steps:\n"
-                          f"    {steps}")
-        if self.oid in self.objects:
-            self.logger.warning(f"Identifier '{self.oid}' is already in "
-                                f"'objects', corresponding object will be "
-                                f"updated.")
+                          f"    {[i[0] for i in steps]}")
         res = init
         for step in steps:
-            self.logger.debug(step)
+            self.logger.debug(f"step:\n"
+                              f"    {step[0]}")
             # len(step)=3 guaranteed.
             method = step[0]
             kwargs = step[1]
@@ -213,6 +218,42 @@ class Producer(object):
 
         self.logger.warning(f"Warning: use cache file(s):\n    {cachedir}")
         return obj
+
+    def dict_api(self, obj, method='update', **kwargs):
+        """Forwarding api for dictionary object.
+
+        Could be useful to add/pop keys via configuration steps. For example
+        to proceed update: ('dict_api', {'b':7} )
+        """
+        if not isinstance(obj, dict):
+            raise TypeError('Object should be a dictionary.')
+
+        _ = getattr(obj, method)(**kwargs)
+
+        return obj
+
+    def update(self, obj, items):
+        """Update key(s) for dictionary object.
+
+        Parameters
+        ----------
+        obj : dict
+            Object to update.
+        items : dict, list, optional (default=None)
+            Either dictionary or items [(key,val),] to update ``obj``.
+
+        Returns
+        -------
+        obj : dict
+            Updated input.
+
+        """
+        if not isinstance(obj, dict):
+            raise TypeError('Object should be a dictionary.')
+
+        obj.update(items)
+        return obj
+
 
     def _resolve_object(self, kwargs, objects):
         """Substitute objects in kwargs.

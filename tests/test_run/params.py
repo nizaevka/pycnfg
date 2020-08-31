@@ -505,5 +505,30 @@ params = [
             'section_id__conf_id': {'a': 7, 'b': 13},
         }
     ),
+    # [v] dict_api.
+    (
+        18,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'kwargs': {'b': 42},
+                    'steps': [
+                        ('dict_api',),
+                    ],
+                },
+                'conf2_id': {
+                    'b': 42,
+                    'steps': [
+                        ('dict_api', {'b': 43}),
+                    ],
+                },
+            }
+        }],
+        {'dcnfg': {}},
+        {
+            'section_id__conf_id': {'b': 42},
+            'section_id__conf2_id': {'b': 42},
+        }
+    ),
 ]
 
