@@ -51,7 +51,7 @@ del.*
 *.rbc
 *.yarb
 *~
-.DS_Store
+.DS_Storegi
 .git
 .hg
 .svn
