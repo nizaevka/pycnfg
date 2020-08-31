@@ -43,6 +43,7 @@ docs/source/_pythonapi/
 !CONTRIBUTING.md
 
 # ignore pattern everywhere
+del.*
 *$py.class
 *.hprof
 *.pyc
