@@ -1,6 +1,6 @@
 <div align="center">
 
-[![Pycnfg logo](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/logo.PNG?raw=true)](https://github.com/nizaevka/pycnfg)
+[![Pycnfg logo](docs/source/_static/images/logo.png?raw=true)](https://github.com/nizaevka/pycnfg)
 
 **Flexible Python configurations.**
 
@@ -12,28 +12,28 @@
 
 </div>
 
-**PyCNFG** is a tool to execute Python-based configuration.
+**Pycnfg** is a tool to execute Python-based configuration.
 - Pure Python.
 - Flexible.
 
 It offers unified patten to create arbitrary Python objects pipeline-wise. 
 That naturally allows to control all parameters via single file.
 
-[![Workflow](https://github.com/nizaevka/pycnfg/blob/master/docs/source/_static/images/producer.png?raw=true)]
+![Logic](docs/source/_static/images/producer.png?raw=true)
 
 For details, please refer to
- [Concepts](https://pycnfg.readthedocs.io/en/latest/Concepts.html>).
+ [Concepts](https://pycnfg.readthedocs.io/en/latest/Concepts.html).
 
 ## Installation
 
 #### PyPi [![PyPi version](https://img.shields.io/pypi/v/pycnfg.svg)](https://pypi.org/project/pycnfg/) [![PyPI Status](https://pepy.tech/badge/pycnfg)](https://pepy.tech/project/pycnfg)
 
 ```bash
-pip install -U pycnfg
+pip install pycnfg
 ```
 
 <details>
-<summary>Development installation (tests and docs): </summary>
+<summary>Development installation (tests and docs) </summary>
 <p>
 
 ```bash
@@ -51,7 +51,7 @@ docker run -it nizaevka/pycnfg
 Pycnfg is tested on: Python 3.6+.
 
 ## Docs
-[![Docs](https://readthedocs.org/projects/pycnfg/badge/?version=latest)](https://readthedocs.org/pycnfg/en/latest/?badge=latest)
+[![Docs](https://readthedocs.org/projects/pycnfg/badge/?version=latest)](https://pycnfg.readthedocs.io/en/latest)
 
 ## Getting started
 
@@ -66,7 +66,7 @@ see docs for details ;)
 ## Examples
 Check **[examples folder](examples)**.
 
-Check also [MLshell](https://github.com/nizaevka/mlshell) - ML framework based on Pycnfg.
+Check also [mlshell](https://github.com/nizaevka/mlshell) - a ML framework based on Pycnfg.
 
 ## Contribution guide
 - [contribution guide](CONTRIBUTING.md).
