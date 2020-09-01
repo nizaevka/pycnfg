@@ -28,7 +28,7 @@ deploy:
         # For multiple branches:
         # $TRAVIS_BRANCH =~ ^(staging|production)$
         all_branches: true
-        condition: $TRAVIS_BRANCH =~ ^v\d+\.\d+(\.\d+)?(-\S*)?$
+        condition: $TRAVIS_BRANCH =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/
         # only on tagged direct (no PR) commit "git push origin --tags"
         # If the `tags` key is specified, the `branch` ignored.
         # tags: true
