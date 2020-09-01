@@ -36,6 +36,7 @@ deploy:
     password:
       secure: "$PYPI_PASSWORD"
     distributions: "sdist bdist_wheel"
+    # Skip already exist error.
     skip_existing: true
 #     # test PyPi
 #     provider: script
@@ -43,12 +44,13 @@ deploy:
 #     on:
 #        branch: feature
 
+# Only if deploy on pypi. Use $TRAVIS_BRANCH as version.
 after_deploy:
-    - docker build -t nizaevka/pycnfg -f Dockerfile .
+    - docker build -t nizaevka/pycnfg:$TRAVIS_BRANCH -f Dockerfile .
     # log in to the docker CLI
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
     # push to dockerhub
-    - docker push nizaevka/pycnfg
+    - docker push nizaevka/pycnfg:$TRAVIS_BRANCH
 
 # global whitelist.
 # start travis build (exec yml) only on change to specific branch/tag.
@@ -56,4 +58,6 @@ after_deploy:
 branches:
   only:
     - master
-    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
+    - /^v[0-9].*$/
+# more specific, not work in $TRAVIS_BRANCH
+#    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
