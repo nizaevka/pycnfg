@@ -18,12 +18,20 @@ script:
     - docker run -e CI=true nizaevka/pycnfg pytest tests
 #    - make test
 
+# currently deploy on branch {vX.X or vX.X.X}
 deploy:
     # pypi
     provider: pypi
     on:
-        branch: master
-        tags: true  # only on tagged commit git push --tags
+        # Single branch
+        # branch: master
+        # For multiple branches:
+        # $TRAVIS_BRANCH =~ ^(staging|production)$
+        all_branches: true
+        condition: $TRAVIS_BRANCH =~ ^v\d+\.\d+(\.\d+)?(-\S*)?$
+        # only on tagged direct (no PR) commit "git push origin --tags"
+        # If the `tags` key is specified, the `branch` ignored.
+        # tags: true
     user: "$PYPI_USERNAME"
     password:
       secure: "$PYPI_PASSWORD"
@@ -42,7 +50,10 @@ after_deploy:
     # push to dockerhub
     - docker push nizaevka/pycnfg
 
-# only on change to master
+# global whitelist.
+# start travis build (exec yml) only on change to specific branch/tag.
+# currently: master or {v1.3 / v1.4.5}
 branches:
   only:
     - master
+    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
