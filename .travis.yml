@@ -1,9 +1,12 @@
+# https://support.travis-ci.com/hc/en-us/articles/115002904174-Validating-travis-yml-files
+# https://config.travis-ci.com/explore
 # used by make and deploy
 language: python
+"os": ["linux"]
+"dist": "xenial"
 python:
     - "3.7"
 
-sudo: required
 services:
     - docker
 before_install:
@@ -18,7 +21,7 @@ script:
     - docker run -e CI=true nizaevka/pycnfg pytest tests
 #    - make test
 
-# currently deploy on branch {vX.X or vX.X.X}
+# Currently deploy on push branch/tag with name {vX.X or vX.X.X}
 deploy:
     # pypi
     provider: pypi
@@ -32,9 +35,8 @@ deploy:
         # only on tagged direct (no PR) commit "git push origin --tags"
         # If the `tags` key is specified, the `branch` ignored.
         # tags: true
-    user: "$PYPI_USERNAME"
-    password:
-      secure: "$PYPI_PASSWORD"
+    username: "$PYPI_USERNAME"
+    password: "$PYPI_PASSWORD"
     distributions: "sdist bdist_wheel"
     # Skip already exist error.
     skip_existing: true
