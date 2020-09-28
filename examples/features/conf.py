@@ -25,7 +25,7 @@ class CustomProducer(pycnfg.Producer):
         return obj
 
 
-# Explicit.
+# Original.
 CNFG_1 = {
     'section_id': {
         'configuration_id': {
@@ -39,12 +39,15 @@ CNFG_1 = {
     }
 }
 
-# Use CNFG level:
-#   'init',
-#   'global' to rewrite 'key' from 'c' to 'b'.
+# Use CNFG level 'global' to rewrite 'key' from 'c' to 'b' in 'set'/'print'.
 # Use section level 'global' to rewrite 'val' from '24' on '42'.
+# NOTE: In pycnfg.run() should be set update_expl=True to allow replace
+# explicitly set kwargs with global values (by default False).
 CNFG_2 = {
-    'global': {'key': 'b'},
+    'global': {
+        'key': 'b',
+        'print__key': 'b',  # Targeted alternative (higher priority).
+    },
     'init': {'a': 7},
     'section_id': {
         'global': {'val': 42},
@@ -58,33 +61,18 @@ CNFG_2 = {
     }
 }
 
-# Resolve None via config level 'global',
-# 'val' 42 auto moved to 'global').
-CNFG_3 = {
-    'section_id': {
-        'configuration_id': {
-            'init': {'a': 7},
-            'producer': CustomProducer,
-            'val': 42,
-            'global': {'key': 'b'},
-            'steps': [
-                ('set', {'key': None, 'val': None}),
-                ('print', {'key': None}),
-            ],
-        }
-    }
-}
-
 # Resolve None via separate sections.
 # Sections could be reused multiple times.
-CNFG_4 = {
+# NOTE: In pycnfg.run() should be set resolve_none=True to allow resolve
+# explicitly set to None kwargs via sub-configuration (by default False).
+CNFG_3 = {
     'section_id': {
         'configuration_id': {
             'init': {'a': 7},
             'producer': CustomProducer,
             'priority': 2,
             'steps': [
-                ('set', {'key': None, 'val': 42}),
+                ('set', {'key': None, 'val': None}),
                 ('print', {'key': None}),
             ],
         }
@@ -102,13 +90,42 @@ CNFG_4 = {
 
 }
 
+# Resolve values via separate section id.
+CNFG_4 = {
+    'section_id': {
+        'configuration_id': {
+            'init': {'a': 7},
+            'producer': CustomProducer,
+            'priority': 2,
+            'steps': [
+                ('set', {'key': 'key__conf', 'val': 'val__conf2'}),
+                ('print', {'key': 'key__conf'}),
+            ],
+        }
+    },
+    'key': {
+        'conf': {
+            'init': 'b',
+        },
+    },
+    'val': {
+        'conf': {
+            'init': 24,
+        },
+        'conf2': {
+            'init': '42',
+        }
+    },
+
+}
 
 if __name__ == '__main__':
     for cnfg in [CNFG_1, CNFG_2, CNFG_3, CNFG_4]:
         # Execute configuration(s).
-        objects = pycnfg.run(cnfg, dcnfg={}, resolve_none=True)
+        objects = pycnfg.run(cnfg, dcnfg={}, update_expl=True, resolve_none=True)
         # => 42
 
         # Storage for produced object(s).
         print(objects['section_id__configuration_id'])
         # => {'a': 7, 'b': 42}
+        print('=' * 79)

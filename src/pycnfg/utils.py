@@ -83,8 +83,8 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(cnfg, dcnfg=None, objects=None, resolve_none=False, beep=False,
-        debug=False):
+def run(cnfg, dcnfg=None, objects=None, resolve_none=False, update_expl=False,
+        mutable=False, beep=False, debug=False):
     """Wrapper over configuration handler.
 
     Parameters
@@ -105,9 +105,15 @@ def run(cnfg, dcnfg=None, objects=None, resolve_none=False, beep=False,
         If True, try to resolve None values for step kwargs. If kwarg name
         matches with section name, substitute either with conf_id on zero
         position or val, depending on if ``_id`` prefix in ``kwarg_name``.
+    update_expl : bool, optional (default=True)
+        If True apply ``global`` values to update explicitly set kwargs
+        for target step, otherwise update only unset kwargs.
+    mutable : bool, optional (default=False)
+        If True, rewrite existed object when configuration id already in
+        ``objects``. Otherwise skip execution and remain original.
     beep : bool, optional (default=False)
         If True, play sound notification on ending.
-    debug : bool
+    debug : bool, optional (default=False)
         If True, print executed configuration.
 
 
@@ -128,8 +134,9 @@ def run(cnfg, dcnfg=None, objects=None, resolve_none=False, beep=False,
         atexit.register(Beep, 400, 2000)  # Will be the first.
 
     handler = pycnfg.Handler()
-    configs = handler.read(cnfg, dcnfg=dcnfg, resolve_none=resolve_none)
-    objects = handler.exec(configs, objects=objects, debug=debug)
+    configs = handler.read(cnfg, dcnfg=dcnfg, resolve_none=resolve_none,
+                           update_expl=update_expl)
+    objects = handler.exec(configs, objects=objects, mutable=mutable, debug=debug)
     return objects
 
 
