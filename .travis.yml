@@ -30,11 +30,15 @@ deploy:
         # branch: master
         # For multiple branches:
         # $TRAVIS_BRANCH =~ ^(staging|production)$
+        # TRAVIS_BRANCH:
+        #   for push builds, or builds not triggered by a pull request, this is the name of the branch.
+        #   for builds triggered by a pull request this is the name of the branch targeted by the pull request.
+        #   for builds triggered by a tag, this is the same as the name of the tag (TRAVIS_TAG).
         all_branches: true
         condition: $TRAVIS_BRANCH =~ ^v[0-9].*$
         # only on tagged direct (not PR) commit "git push origin --tags"
         # If the `tags` key is specified, the `branch` ignored.
-        # tags: true
+        tags: true
     username: "$PYPI_USERNAME"
     password: "$PYPI_PASSWORD"
     distributions: "sdist bdist_wheel"
