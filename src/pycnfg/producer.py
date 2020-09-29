@@ -1,5 +1,5 @@
 """
-The :mod:`pycnfg.produce` includes class to produce configuration object.
+The :mod:`pycnfg.run` includes class to produce configuration object.
 Use it as Mixin to add desired endpoints.
 
 Support method to cache/read intermediate state of object (pickle/unpickle).
@@ -22,7 +22,7 @@ import pycnfg
 class Producer(object):
     """Execute configuration steps.
 
-    Interface: produce, dump_cache, load_cache, dict_api.
+    Interface: run, dump_cache, load_cache, dict_api.
 
     Parameters
     ----------
@@ -78,7 +78,7 @@ class Producer(object):
         self.logger = logger
         self.project_path = project_path
 
-    def produce(self, init, steps):
+    def run(self, init, steps):
         """Execute configuration steps.
 
         Consecutive call (with decorators):
@@ -123,7 +123,7 @@ class Producer(object):
             kwargs = self._resolve_object(kwargs, self.objects)
             res = functools.reduce(lambda x, y: y(x), decors,
                                    getattr(self, method))(res, **kwargs)
-        # Add identifier if provided.
+        # Add producer identifier to object (if needs).
         # Avoid hasattr(res, 'oid') to prevent execution.
         if 'oid' in dir(res):
             res.oid = self.oid
@@ -253,7 +253,6 @@ class Producer(object):
 
         obj.update(items)
         return obj
-
 
     def _resolve_object(self, kwargs, objects):
         """Substitute objects in kwargs.

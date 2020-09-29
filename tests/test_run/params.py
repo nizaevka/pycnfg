@@ -362,7 +362,7 @@ params = [
             },
 
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'update_expl': True},
         {
             'section_id__conf_id': {'a': 43},
             'section2_id__conf2_id': {'a': 7, 'c': 44},
@@ -399,7 +399,7 @@ params = [
                 'conf_id': {
                 }
             },
-        }},
+        }, 'update_expl': True},
         {
             'section_id__conf_id': {'a': 7, 'c': 44},
         }
@@ -429,7 +429,7 @@ params = [
                 }
             },
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'update_expl': True},
         {
             'section_id__conf_id': {'b': 42},
             'section_id__conf2_id': {'b': 42},
@@ -459,7 +459,7 @@ params = [
                 },
             }
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'update_expl': True},
         {
             'section_1__conf_1': {'a': 7, 'b': 42},
             'section_1__conf_2': {'a': 7, 'c': 99},
@@ -500,7 +500,7 @@ params = [
                 },
             }
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'update_expl': True},
         {
             'section_id__conf_id': {'a': 7, 'b': 13},
         }
@@ -524,10 +524,101 @@ params = [
                 },
             }
         }],
-        {'dcnfg': {}},
+        {'dcnfg': {}, 'update_expl': True},
         {
             'section_id__conf_id': {'b': 42},
             'section_id__conf2_id': {'b': 42},
+        }
+    ),
+    # [v] mutable=True, update_expl=False
+    (
+        19,
+        [{
+            'section_id': {
+                'conf_id': {
+                    'kwargs': {'b': 42},
+                    'steps': [
+                        ('dict_api',),
+                    ],
+                },
+                'conf2_id': {
+                    'b': 42,
+                    'steps': [
+                        ('dict_api', {'b': 43}),
+                    ],
+                },
+            }
+        }],
+        {'dcnfg': {},
+         'objects': {'section_id__conf_id': {'b': 41}},
+         'update_expl': False,
+         'mutable': True},
+        {
+            'section_id__conf_id': {'b': 42},
+            'section_id__conf2_id': {'b': 43},
+        }
+    ),
+    # [v] Get started.
+    (
+        20,
+        [{
+            'section_1': {
+                'conf_1': {
+                    'init': {},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'a', 'val': 42}),
+                        ('print', {'key': 'a'}),
+                    ],
+                    'priority': 1,
+                },
+                'conf_2': {
+                    'init': {'c': 7},
+                    'producer': CustomProducer,
+                    'steps': [
+                        ('set', {'key': 'b', 'val': 24}),
+                        ('print', {'key': 'b'}),
+                        ('print', {'key': 'c'}),
+                    ],
+                    'priority': 2,
+                },
+            }
+        }],
+        {},
+        {
+            'section_1__conf_1': {'a': 42},
+            'section_1__conf_2': {'b': 24, 'c': 7},
+            **out,
+        }
+    ),
+    # [v] dcnfg global only.
+    (
+        21,
+        [{
+            'section_id': {
+                'steps': [
+                    ('dict_api', {'b': 43}),
+                ],
+                'global': {
+                    'b': 42,
+                },
+                'conf_id': {
+                },
+            }
+        }],
+        {'dcnfg': {
+            'section_id': {
+                'global': {
+                    'b': 24,
+                },
+                'steps': [
+                    ('dict_api', {'b': 23}),
+                ],
+                # 'conf_id': {},
+            }
+        }, 'update_expl': True},
+        {
+            'section_id__conf_id': {'b': 42},
         }
     ),
 ]

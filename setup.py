@@ -54,7 +54,7 @@ setuptools.setup(
         'dev': parse_text('requirements_dev.txt', splitlines=True),
     },
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        "Development Status :: 4 - Beta",  # https://pypi.org/classifiers/
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",

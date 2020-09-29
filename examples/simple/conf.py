@@ -1,12 +1,10 @@
-"""
-Example of configuration to produce object.
-"""
+"""Configuration example to produce object."""
 
 import pycnfg
 
 
-class Producer(pycnfg.Producer):
-    """Specify methods to produce object."""
+class CustomProducer(pycnfg.Producer):
+    """Specify custom methods to produce object."""
     def __init__(self, objects, oid):
         # Mandatory.
         super().__init__(objects, oid)
@@ -25,30 +23,32 @@ class Producer(pycnfg.Producer):
 
 
 # Configuration.
-#   Set `init` object state.
-#   Set `producer` class.
+#   Set `init` object state {'a': 7}.
+#   Set `producer` class CustomProducer.
 #   Set `steps` to execute.
 CNFG = {
-    'section_id': {
-        'configuration_id': {
+    'section_1': {
+        'conf_1': {
             'init': {'a': 7},
-            'producer': Producer,
+            'producer': CustomProducer,
             'steps': [
-                ('set', {'key': 'b', 'val': 24}),
+                ('set', {'key': 'b', 'val': 42}),
                 ('print', {}),
                 ('print', {'key': 'b'}),
                 ('method_id', {}),
             ],
-        }
+        },
+        # 'conf_2': {...}
     }
+    # 'section_2': {...}
 }
 
 if __name__ == '__main__':
-    # Execute configuration(s).
-    objects = pycnfg.run(CNFG, dcnfg={})
+    # Execute configuration(s) in priority.
+    objects = pycnfg.run(CNFG)
     # => 7
     # => 42
 
     # Storage for produced object(s).
-    print(objects['section_id__configuration_id'])
+    print(objects['section_1__conf_1'])
     # => {'a': 7, 'b': 42}

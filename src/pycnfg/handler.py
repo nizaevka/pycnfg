@@ -36,14 +36,14 @@ For each section there is common logic:
 
 The target for each sub-configuration is to create an object.
 ``init`` is the template for future object (for example empty dict).
-``producer`` works as factory, it should contain ``produce()`` method that:
+``producer`` works as factory, it should contain ``run()`` method that:
 takes ``init`` and consecutive pass it and kwargs to ``steps`` methods and
 returns resulting object.
 
 .. code-block::
 
     # pseudocode
-    def produce(self, init, steps):
+    def run(self, init, steps):
         obj = init
         for step in steps:
             obj = decorators(getattr(self, step_id))(obj, objects, **kwargs)
@@ -68,15 +68,18 @@ For flexibility, it is possible:
 * Set ``init`` as an instance, a class or a function
 * Set decorators for any step.
 
-Configuration keys
-------------------
+The whole configuration could be considered as sub-configuration in some higher
+level section. That potentially allows arbitrary levels of nesting.
+
+Sub-configuration keys
+----------------------
 
 init : callable or instance, optional (default={})
     Initial state for constructing object. Will be passed consecutive in steps
     as argument. If set as callable ``init``(), auto called.
 
 producer : class, optional (default=pycnfg.Producer)
-    The factory to construct an object: ``producer.produce(init,steps)``.
+    The factory to construct an object: ``producer.run(init, steps)``.
     Class auto initialized: ``producer(objects, 'section_id__configuration_id',
     **kwargs)``, where ``objects`` is a dictionary with previously created
     objects {``section_id__configuration_id``: object}. If ('__init__', kwargs)
@@ -125,11 +128,13 @@ priority : non-negative integer, optional (default=1)
 
 global : dict , optional (default={})
     Specify values to substitute for any kwargs: ``{'kwarg_name': value, }``.
-    It has priority over already set values in ``steps``. This is convenient
-    for example when the same kwarg used in all methods or need to slightly
-    adjust  default configuration. For the last case it is possible to specify
-    more targeted path: ``{'step_id__kwarg_name': value, }``. If global
-    contains multiple resolutions for some kwarg, targeted path has priority.
+    This is convenient for example when the same kwarg used in all methods.
+    It is possible to specify more targeted path with step_id in it:
+    ``{'step_id__kwarg_name': value, }``. If global contains multiple
+    resolutions for some kwarg, targeted path has priority. By default global
+    don`t replace explicitly set values in ``steps``. See ``update_expl``
+    flag in :func:`pycnfg.Handler.read` to change this behavior. See below
+    ``glabal`` usage in other levels of configuration dictionary.
 
 **keys : dict {'kwarg_name': value, ...}, optional (default={})
     All additional keys in configuration are moving to ``global`` automatically
@@ -140,7 +145,7 @@ Notes
 Any configuration key above could be set in the most outer configuration level
 or section level to specify common values either for all sections or all
 sub-sections in some section (Examples below). The more inner level has
-the higher priority, levels priority in ascending: ``conf level (0) => section
+the higher priority, levels priority in ascending: ``cnfg level (0) => section
 level (1) => sub-conf level (2)``. Supported keys: ``global, init, producer,
 patch, steps, priority``.
 
@@ -209,7 +214,7 @@ simultaneously:
                 },
             },
     }
-    # Result:
+    # Result (update_expl=True):
     {
         'section_1__conf_1': {'a': 7, 'b': 42},
         'section_1__conf_2': {'a': 7, 'b': 99},
@@ -236,7 +241,7 @@ for example kwarg 'c' for step 'func':
     # In the last case, 'global' can address 'c' directly:
     # 'global': {'c': 4}
 
-See more detailed examples in :doc:`Examples <Examples>`  .
+See more detailed examples in :doc:`Examples <Examples>` .
 
 See Also
 --------
@@ -265,19 +270,46 @@ import pycnfg
 __all__ = ['Handler']
 
 
-class Handler(object):
-    """Read and execute configurations.
+class Handler(pycnfg.Producer):
+    """Read and execute configurations in priority.
 
     Interface: read, exec.
+
+    Parameters
+    ----------
+    objects : dict
+        Dictionary with objects from previous executed producers:
+        {'section_id__config__id', object,}
+    oid : str
+        Unique identifier of produced object.
+    path_id : str, optional (default='default')
+        Project path identifier in `objects`.
+    logger_id : str, optional (default='default')
+        Logger identifier in `objects`.
+
+    Attributes
+    ----------
+    objects : dict
+        Dictionary with objects from previous executed producers:
+        {'section_id__config__id', object,}
+    oid : str
+        Unique identifier of produced object.
+    logger : :class:`logging.Logger`
+        Logger.
+    project_path : str
+        Absolute path to project dir.
 
     See Also
     ---------
     :class:`pycnfg.Producer`: Execute configuration steps.
 
     """
-    _required_parameters = []
+    _required_parameters = ['objects', 'oid', 'path_id', 'logger_id']
 
-    def __init__(self):
+    def __init__(self, objects, oid, path_id='path__default',
+                 logger_id='logger__default'):
+        pycnfg.Producer.__init__(self, objects, oid, path_id=path_id,
+                                 logger_id=logger_id)
         # Save readed files as s under unique id.
         self._readed = {}
         self._dkeys = {
@@ -289,7 +321,7 @@ class Handler(object):
             'steps': [],
         }
 
-    def read(self, cnfg, dcnfg=None, resolve_none=False):
+    def read(self, cnfg, dcnfg=None, resolve_none=False, update_expl=False):
         """Read raw configuration and transform to executable.
 
         Parameters
@@ -304,9 +336,13 @@ class Handler(object):
             If str, absolute path to file with ``CNFG`` variable.
             If None, use :data:`pycnfg.CNFG` .
         resolve_none : bool, optional (default=False)
-            If True, try to resolve None values for step kwargs. If kwarg name
-            matches with section name, substitute either with conf_id on zero
-            position or val, depending on if ``_id`` prefix in ``kwarg_name``.
+            If True, try to resolve None values for step kwargs (if any remains
+            after global substitution). If kwarg name matches with section name,
+            substitute either with conf_id on zero position or val, depending
+            on if ``_id`` prefix in ``kwarg_name``.
+        update_expl : bool, optional (default=True)
+            If True apply ``global`` values to update explicitly set kwargs
+            for target step, otherwise update only unset kwargs.
 
         Returns
         -------
@@ -343,27 +379,27 @@ class Handler(object):
             dcnfg = copy.deepcopy(pycnfg.CNFG)
 
         if isinstance(cnfg, str):
-            cnfg = self._import_cnfg(cnfg)
+            conf_id = f"cnfg_{self.oid}"  # register import
+            cnfg = self._import_cnfg(cnfg, conf_id)
         if isinstance(dcnfg, str):
-            dcnfg = self._import_cnfg(dcnfg)
-        configs = self._parse_cnfg(cnfg, dcnfg, resolve_none)
+            dconf_id = f'cnfg_default_{self.oid}'
+            dcnfg = self._import_cnfg(dcnfg, dconf_id)
+        configs = self._parse_cnfg(cnfg, dcnfg, resolve_none, update_expl)
         return configs
 
-    def _import_cnfg(self, conf):
+    def _import_cnfg(self, conf, conf_id):
         """Read file as module, get CNFG."""
-        conf_id = str(time.time())
-        spec = importlib.util.spec_from_file_location(f'CNFG_{conf_id}',
-                                                      f"{conf}")
+        spec = importlib.util.spec_from_file_location(conf_id, conf)
         conf_file = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(conf_file)
         # Otherwise problem with CNFG pickle, depends on the module path.
-        sys.modules[f'CNFG_{conf_id}'] = conf_file
+        sys.modules[conf_id] = conf_file
         with open(conf, 'r') as f:
             self._readed[conf_id] = f.read()
         conf = copy.deepcopy(conf_file.CNFG)
         return conf
 
-    def exec(self, configs, objects=None, debug=False):
+    def exec(self, configs, mutable=False, debug=False):
         """Execute configurations in priority.
 
         For each configuration:
@@ -371,7 +407,7 @@ class Handler(object):
         * Initialize producer
          ``producer(objects,``section_id__configuration_id``, **kwargs)``,
          where kwargs taken from ('__init__', kwargs) step if provided.
-        * call ``producer.produce(init, steps)``.
+        * call ``producer.run(init, steps)``.
         * store result under ``section_id__configuration_id`` in ``objects``.
 
         Parameters
@@ -379,9 +415,10 @@ class Handler(object):
         configs : list of tuple
             List of configurations, prepared for execution:
             [('section_id__config__id', config), ...]
-        objects : dict, optional (default=None)
-            Dict of initial objects. If None, {}.
-        debug : bool
+        mutable : bool, optional (default=False)
+            If True, rewrite existed object when configuration id already in
+            ``objects``. Otherwise skip execution and remain original.
+        debug : bool, optional (default=False)
             If True, print debug information.
 
         Returns
@@ -395,25 +432,32 @@ class Handler(object):
         ``producer``/``init`` auto initialized if needed.
 
         """
-        if objects is None:
-            objects = {}
+        objects = self.objects
 
         for config in configs:
             if debug:
-                print(config, flush=True)
+                self.logger.debug(config)
             oid, val = config
             if oid in objects:
-                print(f"Warninig: Identifier '{oid}' is already in "
-                      f"'objects', original object remains.", flush=True)
-                continue
+                if mutable:
+                    self.logger.warning(
+                        f"Warninig: Identifier '{oid}' is already in "
+                        f"'objects', object will be replaced. See 'mutable'"
+                        f" argument to change this behaviour.")
+                else:
+                    self.logger.warning(
+                        f"Warninig: Identifier '{oid}' is already in "
+                        f"'objects', original object remains. See 'mutable'"
+                        f" argument to change this behaviour.")
+                    continue
             objects[oid] = self._exec(oid, val, objects)
         return objects
 
-    def _parse_cnfg(self, p, dp, resolve_none):
+    def _parse_cnfg(self, p, dp, resolve_none, update_expl):
         # Apply default.
         p = self._merge_default(p, dp)
         # Resolve global / None.
-        p = self._resolve(p, resolve_none)
+        p = self._resolve(p, resolve_none, update_expl)
         # Arrange in priority.
         res = self._priority_arrange(p)  # [('section_id__config__id', config)]
         self._check_res(res)
@@ -426,13 +470,15 @@ class Handler(object):
         otherwise ignore.
         * Copy skipped sections from dp (could be multiple confs).
         * Copy skipped sub-keys from dp section(s) of the same name.
-         If dp section contains multiple confs, search for nmae match,
-         otherwise use zero position conf.
+         If dp section contains multiple confs, search for name match,
+         otherwise use zero position conf (if exist).
         * Fill skipped sub-keys for section not existed in dp.
          {'init': {}, 'class': pycnfg.Producer, 'global': {}, 'patch': {},
          'priority': 1, 'steps': [],}
         * Fill skipped steps {kwargs:{}, decorators:[]}
         * Add special 'global' to conf level and section levels.
+        Note:
+            Default sub-conf level(2) has priority over original (0)/(1) levels.
         """
         dkeys = self._dkeys
 
@@ -450,7 +496,8 @@ class Handler(object):
                 # Copy skipped sub-keys for existed in dp conf (zero position
                 # or name match). Also work for 'global' on section level,
                 # not overwrite existed.
-                dp_conf_ids = list(dp[section_id].keys())
+                dp_conf_ids = [key for key in dp[section_id].keys()
+                               if key not in dkeys]
                 # [deprecated] disable merge, bad logic.
                 # if 'global' not in p[section_id]:
                 #     # Otherwise would not sync section level global.
@@ -464,7 +511,9 @@ class Handler(object):
                     # elif conf_id is 'global':
                     #    continue
                     else:
-                        # Get zero position dp conf in section.
+                        # Get zero position dp conf in section (if exist).
+                        if not dp_conf_ids:
+                            continue
                         dp_conf_id = dp_conf_ids[0]
                     for subkey in dp[section_id][dp_conf_id].keys():
                         if subkey not in conf:
@@ -491,7 +540,7 @@ class Handler(object):
                     raise TypeError(f"Custom params[{key}]"
                                     f" should be the dict instance.")
 
-    def _resolve(self, p, resolve_none):
+    def _resolve(self, p, resolve_none, update_expl):
         """Resolve and substitute dkeys and None inplace."""
         # ``unused_nonglobal`` contain unused non-global dkeys to log.
         unused_nonglobal = set()  # {'level_2__producer',..}
@@ -504,12 +553,14 @@ class Handler(object):
         for section_id in p.keys()-self._dkeys.keys():
             for conf_id in p[section_id].keys()-self._dkeys.keys():
                 self._substitute_global(section_id, conf_id,
-                                        p[section_id][conf_id], unused_global)
+                                        p[section_id][conf_id], unused_global,
+                                        update_expl)
                 if resolve_none:
                     self._resolve_none(p, section_id, conf_id, used_ids)
         if unused_nonglobal or unused_global:
-            print(f"Warning: Unused global key(s):\n"
-                  f"    {unused_nonglobal|unused_global}", flush=True)
+            self.logger.warning(
+                f"Warning: Unused global key(s):\n"
+                f"    {unused_nonglobal|unused_global}")
         return p
 
     def _resolve_nonglobal(self, p, unused):
@@ -648,14 +699,16 @@ class Handler(object):
         del p['global']
         return
 
-    def _substitute_global(self, section_id, conf_id, conf, unused):
+    def _substitute_global(self, section_id, conf_id, conf, unused, update_expl):
         """Substitute sub-configuration globals.
 
+        update_expl: bool
+            Replace explicitly set kwargs with global or not.
         Notes
         -----
-            Inner level has higher priority than outer.
-            On each level targeted path has higher priority than non-targeted
-            (longer name).
+        Inner level global has higher priority than outer. By default global
+        replace explicitly set args. On each level targeted path has higher
+        priority than non-targeted (longer name).
         """
         # Create set of kwargs kw_set for conf steps: {'step_id__kwarg_id'}.
         kw_set = set()
@@ -684,11 +737,15 @@ class Handler(object):
                     kw_name[step_id] = i.replace('**', '')
                 elif '*' in i:
                     w_name[step_id] = i.replace('*', '')
-            expl = step[1]  # dict
+            expl = step[1]  # dict (could be additional to impl kwargs)
             # ('a', 'b', 'args', 'c', 'd', 'kwargs')
             impl = tuple(insp.parameters)
-            mrg = set(expl)
-            mrg.update(impl)
+            if update_expl:
+                mrg = set(expl)
+                mrg.update(impl)
+            else:
+                mrg = set(impl) - set(expl)
+            # All args available to update with global
             kw_set.update({f'{ind}__{step_id}__{i}' for i in mrg})
         # Rearrange global:
         # Sort in level priority.
@@ -707,14 +764,14 @@ class Handler(object):
         # glob_kw_lis contains reduced to step_kwarg/kwarg.
         glob_kw_lis = glob_lis[:]
         self._check_duality(section_id, conf_id, conf, glob_kw_lis)
-        #   Substitute value with highest index for each kwarg.
+        # Substitute value with highest index for each kwarg.
         used_ind = []
         for ind, glob_kw in enumerate(glob_kw_lis):
             if glob_kw is '__':
                 continue
             kw_set_ = list(kw_set)  # Dynamically change.
             for kw in kw_set_:
-                # could be magic method.
+                # Could be magic method.
                 tmp = kw.split('__')
                 step_ind = int(tmp[0])
                 kw_id = tmp[-1]
@@ -889,7 +946,7 @@ class Handler(object):
                     # Step kwargs name(except postfix) match with section name.
                     # Not necessary need to substitute if kwarg name match
                     # section. Substitute only if None or kwarg match with
-                    # section__conf (on handler level). Here substitue id,
+                    # section__conf (on handler level). Here substitute id,
                     # later in handler val if no id postfix.
                     self._substitute_none(p, section_id, conf_id, ids, key,
                                           glob_val, step_id, kwargs, key_id)
@@ -961,7 +1018,7 @@ class Handler(object):
         else:
             raise TypeError(f"{oid} producer should be a class.")
         producer = self._patch(patch, producer)
-        return producer.produce(init, steps)
+        return producer.run(init, steps)
 
     def _init_kwargs(self, steps):
         """Extract kwargs to init producer."""
