@@ -36,14 +36,14 @@ For each section there is common logic:
 
 The target for each sub-configuration is to create an object.
 ``init`` is the template for future object (for example empty dict).
-``producer`` works as factory, it should contain ``produce()`` method that:
+``producer`` works as factory, it should contain ``run()`` method that:
 takes ``init`` and consecutive pass it and kwargs to ``steps`` methods and
 returns resulting object.
 
 .. code-block::
 
     # pseudocode
-    def produce(self, init, steps):
+    def run(self, init, steps):
         obj = init
         for step in steps:
             obj = decorators(getattr(self, step_id))(obj, objects, **kwargs)
@@ -68,8 +68,11 @@ For flexibility, it is possible:
 * Set ``init`` as an instance, a class or a function
 * Set decorators for any step.
 
-Configuration keys
-------------------
+The whole configuration could be considered as sub-configuration in some higher
+level section. That potentially allows arbitrary levels of nesting.
+
+Sub-configuration keys
+----------------------
 
 init : callable or instance, optional (default={})
     Initial state for constructing object. Will be passed consecutive in steps
@@ -267,22 +270,46 @@ import pycnfg
 __all__ = ['Handler']
 
 
-class Handler(object):
-    """Read and execute configurations.
+class Handler(pycnfg.Producer):
+    """Read and execute configurations in priority.
 
     Interface: read, exec.
+
+    Parameters
+    ----------
+    objects : dict
+        Dictionary with objects from previous executed producers:
+        {'section_id__config__id', object,}
+    oid : str
+        Unique identifier of produced object.
+    path_id : str, optional (default='default')
+        Project path identifier in `objects`.
+    logger_id : str, optional (default='default')
+        Logger identifier in `objects`.
+
+    Attributes
+    ----------
+    objects : dict
+        Dictionary with objects from previous executed producers:
+        {'section_id__config__id', object,}
+    oid : str
+        Unique identifier of produced object.
+    logger : :class:`logging.Logger`
+        Logger.
+    project_path : str
+        Absolute path to project dir.
 
     See Also
     ---------
     :class:`pycnfg.Producer`: Execute configuration steps.
 
     """
-    _required_parameters = []
+    _required_parameters = ['objects', 'oid', 'path_id', 'logger_id']
 
-
-
-
-    def __init__(self):
+    def __init__(self, objects, oid, path_id='path__default',
+                 logger_id='logger__default'):
+        pycnfg.Producer.__init__(self, objects, oid, path_id=path_id,
+                                 logger_id=logger_id)
         # Save readed files as s under unique id.
         self._readed = {}
         self._dkeys = {
@@ -352,27 +379,27 @@ class Handler(object):
             dcnfg = copy.deepcopy(pycnfg.CNFG)
 
         if isinstance(cnfg, str):
-            cnfg = self._import_cnfg(cnfg)
+            conf_id = f"cnfg_{self.oid}"  # register import
+            cnfg = self._import_cnfg(cnfg, conf_id)
         if isinstance(dcnfg, str):
-            dcnfg = self._import_cnfg(dcnfg)
+            dconf_id = f'cnfg_default_{self.oid}'
+            dcnfg = self._import_cnfg(dcnfg, dconf_id)
         configs = self._parse_cnfg(cnfg, dcnfg, resolve_none, update_expl)
         return configs
 
-    def _import_cnfg(self, conf):
+    def _import_cnfg(self, conf, conf_id):
         """Read file as module, get CNFG."""
-        conf_id = str(time.time())
-        spec = importlib.util.spec_from_file_location(f'CNFG_{conf_id}',
-                                                      f"{conf}")
+        spec = importlib.util.spec_from_file_location(conf_id, conf)
         conf_file = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(conf_file)
         # Otherwise problem with CNFG pickle, depends on the module path.
-        sys.modules[f'CNFG_{conf_id}'] = conf_file
+        sys.modules[conf_id] = conf_file
         with open(conf, 'r') as f:
             self._readed[conf_id] = f.read()
         conf = copy.deepcopy(conf_file.CNFG)
         return conf
 
-    def exec(self, configs, objects=None, mutable=False, debug=False):
+    def exec(self, configs, mutable=False, debug=False):
         """Execute configurations in priority.
 
         For each configuration:
@@ -388,8 +415,6 @@ class Handler(object):
         configs : list of tuple
             List of configurations, prepared for execution:
             [('section_id__config__id', config), ...]
-        objects : dict, optional (default=None)
-            Dict of initial objects. If None, {}.
         mutable : bool, optional (default=False)
             If True, rewrite existed object when configuration id already in
             ``objects``. Otherwise skip execution and remain original.
@@ -407,22 +432,23 @@ class Handler(object):
         ``producer``/``init`` auto initialized if needed.
 
         """
-        if objects is None:
-            objects = {}
+        objects = self.objects
 
         for config in configs:
             if debug:
-                print(config, flush=True)
+                self.logger.debug(config)
             oid, val = config
             if oid in objects:
                 if mutable:
-                    print(f"Warninig: Identifier '{oid}' is already in "
-                          f"'objects', object will be replaced. See 'mutable'"
-                          f" argument to change this behaviour.", flush=True)
+                    self.logger.warning(
+                        f"Warninig: Identifier '{oid}' is already in "
+                        f"'objects', object will be replaced. See 'mutable'"
+                        f" argument to change this behaviour.")
                 else:
-                    print(f"Warninig: Identifier '{oid}' is already in "
-                          f"'objects', original object remains. See 'mutable'"
-                          f" argument to change this behaviour.", flush=True)
+                    self.logger.warning(
+                        f"Warninig: Identifier '{oid}' is already in "
+                        f"'objects', original object remains. See 'mutable'"
+                        f" argument to change this behaviour.")
                     continue
             objects[oid] = self._exec(oid, val, objects)
         return objects
@@ -532,8 +558,9 @@ class Handler(object):
                 if resolve_none:
                     self._resolve_none(p, section_id, conf_id, used_ids)
         if unused_nonglobal or unused_global:
-            print(f"Warning: Unused global key(s):\n"
-                  f"    {unused_nonglobal|unused_global}", flush=True)
+            self.logger.warning(
+                f"Warning: Unused global key(s):\n"
+                f"    {unused_nonglobal|unused_global}")
         return p
 
     def _resolve_nonglobal(self, p, unused):

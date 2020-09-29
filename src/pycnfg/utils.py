@@ -5,6 +5,7 @@ import atexit
 import importlib
 import os
 import sys
+import time
 import warnings
 
 import pycnfg
@@ -83,7 +84,8 @@ def find_path(script_name=False, filepath=None):
         return project_dir
 
 
-def run(cnfg, dcnfg=None, objects=None, resolve_none=False, update_expl=False,
+def run(cnfg, dcnfg=None, objects=None, oid=None,
+        resolve_none=False, update_expl=False,
         mutable=False, beep=False, debug=False):
     """Wrapper over configuration handler.
 
@@ -100,7 +102,9 @@ def run(cnfg, dcnfg=None, objects=None, resolve_none=False, update_expl=False,
         work dir.
     objects : dict, optional (default=None)
         Dict of initial objects to pass in ``pycnfg.Handler.exec()``:
-        {'object_id': object}.
+        {'object_id': object}. If None, set {}.
+    oid : str, optional (default=None)
+        Unique identifier of ``cnfg``. If None, use ``str(time.time())``.
     resolve_none : bool, optional (default=False)
         If True, try to resolve None values for step kwargs. If kwarg name
         matches with section name, substitute either with conf_id on zero
@@ -116,12 +120,19 @@ def run(cnfg, dcnfg=None, objects=None, resolve_none=False, update_expl=False,
     debug : bool, optional (default=False)
         If True, print executed configuration.
 
-
     Returns
     -------
     objects : dict
         Dict of objects created by execution all configurations:
         {'section_id__configuration_id': object}.
+
+    Notes
+    -----
+    ``cnfg`` could be executed as sub-configuration itself.
+    init = cnfg
+    steps = [('read', {..}), ('exec', {..})]
+    producer = pycnfg.Handler(objects, oid)
+    objects[oid] = producer.run(init, steps)
 
     See Also
     --------
@@ -129,14 +140,18 @@ def run(cnfg, dcnfg=None, objects=None, resolve_none=False, update_expl=False,
 
     """
     warnings.simplefilter(action='ignore', category=FutureWarning)
+    if objects is None:
+        objects = {}
+    if oid is None:
+        oid = str(time.time()).replace('.', '-')
     if beep:
         atexit.register(Beep, 600, 500)
         atexit.register(Beep, 400, 2000)  # Will be the first.
 
-    handler = pycnfg.Handler()
+    handler = pycnfg.Handler(objects, oid)
     configs = handler.read(cnfg, dcnfg=dcnfg, resolve_none=resolve_none,
                            update_expl=update_expl)
-    objects = handler.exec(configs, objects=objects, mutable=mutable, debug=debug)
+    objects = handler.exec(configs, mutable=mutable, debug=debug)
     return objects
 
 

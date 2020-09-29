@@ -32,7 +32,7 @@ deploy:
         # $TRAVIS_BRANCH =~ ^(staging|production)$
         all_branches: true
         condition: $TRAVIS_BRANCH =~ ^v[0-9].*$
-        # only on tagged direct (no PR) commit "git push origin --tags"
+        # only on tagged direct (not PR) commit "git push origin --tags"
         # If the `tags` key is specified, the `branch` ignored.
         # tags: true
     username: "$PYPI_USERNAME"
