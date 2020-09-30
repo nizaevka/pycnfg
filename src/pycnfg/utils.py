@@ -128,10 +128,12 @@ def run(cnfg, dcnfg=None, objects=None, oid=None,
 
     Notes
     -----
-    ``cnfg`` could be executed as sub-configuration itself.
-    init = cnfg
-    steps = [('read', {..}), ('exec', {..})]
-    producer = pycnfg.Handler(objects, oid)
+    ``cnfg`` could be executed as sub-configuration itself:
+
+        * init = cnfg
+        * steps = [('read', {..}), ('exec', {..})]
+        * producer = pycnfg.Handler(objects, oid)
+
     objects[oid] = producer.run(init, steps)
 
     See Also

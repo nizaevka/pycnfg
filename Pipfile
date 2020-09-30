@@ -13,8 +13,6 @@ pytest = "*"
 coverage = "*"
 
 [packages]
-e1839a8 = {editable = true,path = "."}
-pycnfg = {editable = true,extras = ["dev"],path = "."}
 
 [requires]
 python_version = "3.7"
