@@ -4,7 +4,6 @@
 !*/
 
 Project*/
-.*/
 
 # Specific.
 !src/pycnfg/**
@@ -64,3 +63,6 @@ results/
 vssver.scc
 vssver2.scc
 deprecated.py
+
+# Should be the last.
+.*/
